@@ -35,3 +35,8 @@ godot --headless --path . --quit
 - [E_hud_run_state.md](E_hud_run_state.md)
 - [F_content_demo_room.md](F_content_demo_room.md)
 
+## 当前迭代
+
+- 总路线图：[../ROADMAP.md](../ROADMAP.md)
+- v0.1 手感闭环：[../iterations/v0.1_handfeel_loop.md](../iterations/v0.1_handfeel_loop.md)
+- v0.1 prompts：[V0_1_PROMPTS.md](V0_1_PROMPTS.md)
