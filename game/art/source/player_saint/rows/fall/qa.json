@@ -1,0 +1,8 @@
+{
+  "row": "fall",
+  "frames": 4,
+  "visual_qa": "pass",
+  "generation_rounds": 1,
+  "anchor_correction": "not needed; checked bounding-box center and transparent corners after generation",
+  "notes": "identity stable; no forbidden symbols; no held sword; loopable falling posture with stable body center"
+}
