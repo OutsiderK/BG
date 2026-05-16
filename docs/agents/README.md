@@ -45,3 +45,4 @@ godot --headless --path . --quit
 - v0.3 美术与武器垂直切片：[../iterations/v0.3_art_weapon_vertical_slice.md](../iterations/v0.3_art_weapon_vertical_slice.md)
 - v0.3 高质量动画工具链：[../art/animation_pipeline.md](../art/animation_pipeline.md)
 - v0.3.1 主角动作与剑 FX prompts：[V0_3_1_PLAYER_ART_PROMPTS.md](V0_3_1_PLAYER_ART_PROMPTS.md)
+- v0.3.2 敌人/房间/HUD 美术 prompts：[V0_3_2_WORLD_ART_PROMPTS.md](V0_3_2_WORLD_ART_PROMPTS.md)
