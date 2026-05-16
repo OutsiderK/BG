@@ -1,0 +1,8 @@
+{
+  "row": "death",
+  "frames": 8,
+  "visual_qa": "pass",
+  "generation_rounds": 1,
+  "anchor_correction": "not applied; inspect_frames reports center-of-mass drift because the row intentionally kneels, collapses, and sinks into coordinate residue",
+  "notes": "kneel/collapse read is clear; coordinate wear replaces gore; no held sword, text, watermark, or forbidden symbols"
+}

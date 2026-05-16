@@ -1,0 +1,8 @@
+{
+  "row": "unfold-loop",
+  "frames": 4,
+  "visual_qa": "pass",
+  "generation_rounds": 1,
+  "anchor_correction": "minor 1px vertical corrections on frames 1 and 3 after inspect_frames drift check",
+  "notes": "loopable flattened hover; coordinate grid is restrained; no held sword, attack pose, text, watermark, or forbidden symbols"
+}

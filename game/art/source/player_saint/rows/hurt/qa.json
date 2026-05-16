@@ -1,0 +1,8 @@
+{
+  "row": "hurt",
+  "frames": 4,
+  "visual_qa": "pass",
+  "generation_rounds": 1,
+  "anchor_correction": "minor 4px/-2px correction on frame 1 after inspect_frames drift check",
+  "notes": "short backward recoil; restrained white flash; no blood, held sword, text, watermark, or forbidden symbols"
+}

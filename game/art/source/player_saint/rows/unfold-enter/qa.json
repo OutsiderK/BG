@@ -1,0 +1,9 @@
+{
+  "row": "unfold-enter",
+  "frames": 6,
+  "visual_qa": "pass",
+  "generation_rounds": 1,
+  "anchor_correction": "minor 2px correction on frame 4 after inspect_frames drift check",
+  "reverse_suitable_for_unfold_exit": true,
+  "notes": "monotonic compression; dim coordinate lock remains readable; no held sword, attack pose, text, watermark, or forbidden symbols"
+}
