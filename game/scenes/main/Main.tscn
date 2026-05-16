@@ -1,27 +1,17 @@
-[gd_scene load_steps=6 format=3 uid="uid://bg_main_scene"]
+[gd_scene load_steps=5 format=3 uid="uid://bg_main_scene"]
 
 [ext_resource type="Script" path="res://game/scripts/main/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://game/scenes/player/Player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://game/scenes/ui/HUD.tscn" id="3_hud"]
-[ext_resource type="PackedScene" path="res://game/scenes/enemies/DummyEnemy.tscn" id="4_enemy"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(1280, 48)
+[ext_resource type="PackedScene" path="res://game/scenes/rooms/DemoRoom.tscn" id="4_demo_room"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 
+[node name="DemoRoom" parent="." instance=ExtResource("4_demo_room")]
+
 [node name="Player" parent="." instance=ExtResource("2_player")]
 unique_name_in_owner = true
-position = Vector2(240, 480)
-
-[node name="DummyEnemy" parent="." instance=ExtResource("4_enemy")]
-position = Vector2(640, 480)
-
-[node name="Ground" type="StaticBody2D" parent="."]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
-position = Vector2(640, 540)
-shape = SubResource("RectangleShape2D_ground")
+position = Vector2(220, 480)
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
