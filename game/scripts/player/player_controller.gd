@@ -25,6 +25,8 @@ var dead := false
 @onready var sword_attack: Node = get_node_or_null("SwordAttack")
 
 func _ready() -> void:
+	add_to_group("player")
+	UnfoldManager.set_player(self)
 	hp = max_hp
 	dash_charges = max_dash_charges
 	RunState.set_health(hp, max_hp)

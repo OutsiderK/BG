@@ -53,6 +53,12 @@ python3 tools/verify_scaffold.py
 godot --headless --path . --quit
 ```
 
+敌人 AI smoke test：
+
+```bash
+godot4 --headless --path . --script tools/godot/enemy_ai_smoke.gd
+```
+
 ## 下一步
 
 下一轮工程优先级见 [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)。
