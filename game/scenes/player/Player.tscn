@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://bg_player"]
+[gd_scene load_steps=5 format=3 uid="uid://bg_player"]
 
 [ext_resource type="Script" path="res://game/scripts/player/player_controller.gd" id="1_player_script"]
 [ext_resource type="PackedScene" path="res://game/scenes/combat/SwordAttack.tscn" id="2_sword_attack"]
+[ext_resource type="Script" path="res://game/scripts/actors/animated_actor.gd" id="3_animated_actor"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 14.0
@@ -14,10 +15,18 @@ script = ExtResource("1_player_script")
 shape = SubResource("CapsuleShape2D_player")
 
 [node name="ColorRect" type="ColorRect" parent="."]
+visible = false
 offset_left = -14.0
 offset_top = -44.0
 offset_right = 14.0
 offset_bottom = 0.0
 color = Color(0.85, 0.92, 1, 1)
+
+[node name="AnimatedActor" type="Node2D" parent="."]
+position = Vector2(0, -24)
+scale = Vector2(0.58, 0.58)
+script = ExtResource("3_animated_actor")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="AnimatedActor"]
 
 [node name="SwordAttack" parent="." instance=ExtResource("2_sword_attack")]

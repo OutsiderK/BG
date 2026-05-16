@@ -72,7 +72,7 @@ sprite sheet 路线的代价：
 - 游戏运行目标：60 FPS
 - sprite 动画帧率：12 FPS（默认）；高速 row（dash、attack）可单独提到 24 FPS
 - 帧间过渡：`AnimatedSprite2D` 不做帧插值（保留剪影感）；状态切换通过 `AnimationTree` 状态混合
-- 命中帧必须和碰撞激活帧对齐——通过 `SpriteFrames` 的 `frame_changed` 信号触发碰撞盒激活，**误差锁死在同一 `_physics_process` tick**
+- 命中帧必须和碰撞激活帧对齐——通过 `AnimatedSprite2D.frame_changed` 信号触发碰撞盒激活，**误差锁死在同一 `_physics_process` tick**
 - 帧锚点（脚底/中心）跨帧漂移 ≤ 2px（由 `tools/art/validate_atlas.py` 强制校验）
 
 ### 主角最低动作集（v0.3 垂直切片）
@@ -142,9 +142,9 @@ func get_weapon_socket_global() -> Vector2: ...
 func is_in_recovery_window() -> bool: ...
 ```
 
-实现内部由 `AnimatedSprite2D` + `AnimationTree` 驱动；玩法脚本永远不直接读 `frame` 字段、不直接调 `play()`。
+实现内部由 `AnimatedSprite2D` 驱动；玩法脚本永远不直接读 `frame` 字段、不直接调 `play()`。当前 Godot 探针采用运行时从 `spritesheet.png` + `manifest.json` 构造 `SpriteFrames`，避免 headless 环境依赖 `.import` 产物。
 
-事件名约定（在 `SpriteFrames` 的 `frame_changed` 信号上挂接）：
+事件名约定（在 `AnimatedSprite2D.frame_changed` 信号上挂接）：
 
 - `hit_start` / `hit_end`：命中盒激活/失活
 - `spawn_fx`：触发剑气/命中火花
@@ -159,7 +159,7 @@ game/art/
   sprites/
     player_saint/
       spritesheet.png
-      anim.tres
+      anim.tres                    # 可选编辑器资源；运行时以 manifest 构造为准
       manifest.json
     enemy_bark_corrupt/
     room_thinforest/
@@ -198,8 +198,8 @@ game/scripts/animation/animation_event_bridge.gd
 - 动画状态名：`idle`、`run-right`、`run-left`、`sword-attack-1`、`unfold-enter`、`unfold-loop`、`unfold-exit`
 - 帧文件：`row-<name>-frame-<n>.png`（0-indexed）
 - atlas 合成名：`spritesheet.png`（每个 subject 一张）
-- Godot 资源名：`anim.tres`（SpriteFrames 资源）
-- 事件名（frame_changed 信号回调）：`hit_start`、`hit_end`、`spawn_fx`、`footstep`、`recoverable`
+- Godot 资源名：`anim.tres`（可选 SpriteFrames 编辑器资源）；运行时权威输入为 `spritesheet.png` + `manifest.json`
+- 事件名（`AnimatedSprite2D.frame_changed` 信号回调）：`hit_start`、`hit_end`、`spawn_fx`、`footstep`、`recoverable`
 - 武器挂点：`weapon_socket_main`、`weapon_socket_back`
 - 脚底定位点：`ground_anchor`
 

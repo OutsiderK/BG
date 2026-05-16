@@ -28,7 +28,9 @@ var dash_charges := 2
 var dash_direction := Vector2.RIGHT
 var dead := false
 @onready var sword_attack: Node = get_node_or_null("SwordAttack")
-@onready var player_visual: ColorRect = get_node_or_null("ColorRect") as ColorRect
+@onready var animated_actor: Node = get_node_or_null("AnimatedActor")
+@onready var legacy_visual: ColorRect = get_node_or_null("ColorRect") as ColorRect
+@onready var player_visual: CanvasItem = _find_player_visual()
 
 var _base_visual_color := Color(0.85, 0.92, 1.0, 1.0)
 var _blocked_unfold_on_death := false
@@ -40,7 +42,7 @@ func _ready() -> void:
 	dash_charges = max_dash_charges
 	RunState.set_health(hp, max_hp)
 	if player_visual != null:
-		_base_visual_color = player_visual.color
+		_base_visual_color = player_visual.modulate
 	UnfoldManager.unfold_started.connect(_on_unfold_started)
 	UnfoldManager.unfold_ended.connect(_on_unfold_ended)
 
@@ -65,6 +67,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		_process_vertical(delta)
 	_process_dash()
+	_update_actor_animation()
 	move_and_slide()
 
 func _exit_tree() -> void:
@@ -88,6 +91,7 @@ func _process_dead() -> void:
 	dash_remaining = 0.0
 	dash_invulnerable_remaining = 0.0
 	velocity = Vector2.ZERO
+	_play_actor_state(&"death")
 
 func _process_unfolded(_delta: float) -> void:
 	motion_mode = MOTION_MODE_FLOATING
@@ -125,7 +129,9 @@ func _try_attack() -> void:
 		return
 	if sword_attack == null or not sword_attack.has_method("try_attack"):
 		return
-	sword_attack.call("try_attack", facing, self)
+	var did_attack: bool = sword_attack.call("try_attack", facing, self)
+	if did_attack:
+		_play_actor_attack(&"sword-attack-1")
 
 func _get_dash_direction() -> Vector2:
 	if UnfoldManager.is_unfolded():
@@ -211,19 +217,66 @@ func _die() -> void:
 	UnfoldManager.set_gameplay_blocked(true)
 	_blocked_unfold_on_death = true
 	_update_damage_visual()
+	_play_actor_state(&"death")
 	died.emit()
 
 func _update_damage_visual() -> void:
 	if player_visual == null:
 		return
 	if dead:
-		player_visual.color = death_tint
+		_set_visual_color(death_tint)
 		return
 	if hit_invulnerable_remaining > 0.0:
 		var flash_on := int(floor(hit_invulnerable_remaining / hurt_flash_interval)) % 2 == 0
 		if flash_on:
-			player_visual.color = hurt_flash_color
+			_set_visual_color(hurt_flash_color)
 		else:
-			player_visual.color = Color(_base_visual_color.r, _base_visual_color.g, _base_visual_color.b, 0.45)
+			_set_visual_color(Color(_base_visual_color.r, _base_visual_color.g, _base_visual_color.b, 0.45))
 		return
-	player_visual.color = _base_visual_color
+	_set_visual_color(_base_visual_color)
+
+func _find_player_visual() -> CanvasItem:
+	var actor := get_node_or_null("AnimatedActor") as CanvasItem
+	if actor != null:
+		return actor
+	return get_node_or_null("ColorRect") as CanvasItem
+
+func _set_visual_color(color: Color) -> void:
+	if player_visual != null:
+		player_visual.modulate = color
+	if legacy_visual != null:
+		legacy_visual.color = color
+
+func _play_actor_state(state_name: StringName) -> void:
+	if animated_actor == null or not animated_actor.has_method("play_state"):
+		return
+	animated_actor.call("play_state", state_name)
+
+func _play_actor_attack(attack_name: StringName) -> void:
+	if animated_actor == null or not animated_actor.has_method("play_attack"):
+		return
+	animated_actor.call("play_attack", attack_name)
+
+func _update_actor_animation() -> void:
+	if animated_actor == null:
+		return
+	if animated_actor.has_method("set_facing") and absf(facing.x) > 0.001:
+		animated_actor.call("set_facing", int(signf(facing.x)))
+	if animated_actor.has_method("is_action_playing") and animated_actor.call("is_action_playing"):
+		return
+	if dead:
+		_play_actor_state(&"death")
+		return
+	if dash_remaining > 0.0:
+		_play_actor_state(&"dash")
+		return
+	if UnfoldManager.is_unfolded():
+		_play_actor_state(&"unfold-loop")
+		return
+	if not is_on_floor():
+		_play_actor_state(&"jump-start" if velocity.y < 0.0 else &"fall")
+		return
+	if absf(velocity.x) > 1.0:
+		_play_actor_state(&"run")
+		return
+	_play_actor_state(&"idle")

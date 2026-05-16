@@ -63,6 +63,7 @@ godot4 --headless --path . --script tools/godot/enemy_ai_smoke.gd
 
 ```bash
 godot4 --headless --path . --script tools/godot/enemy_ai_smoke.gd
+godot4 --headless --path . --script tools/godot/animated_actor_smoke.gd
 godot4 --headless --path . --script tools/godot/player_state_smoke.gd
 godot4 --headless --path . --script tools/godot/enemy_attack_smoke.gd
 godot4 --headless --path . --script tools/godot/unfold_mapping_smoke.gd

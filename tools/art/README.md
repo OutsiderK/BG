@@ -30,7 +30,7 @@ python3 tools/art/prepare_run.py --backend mock --subject player_saint --version
 | `make_contact_sheet.py` | 生成 contact sheet（给 AI 视觉 QA 看） | run dir | `qa/contact_sheet.png` |
 | `render_animation_previews.py` | 每行生成 GIF 预览 | run dir + fps | `qa/previews/<row>.gif` |
 | `derive_mirrored_row.py` | 镜像衍生（如 run-left = run-right 翻转） | 源 row 帧 | 目标 row 帧 |
-| `godot_import.py` | 复制 atlas 到 `game/art/sprites/` + 生成 `anim.tres` | run dir + 目标路径 | Godot `SpriteFrames` 资源 |
+| `godot_import.py` | 复制 atlas 到 `game/art/sprites/` + 生成 manifest / 可选 `anim.tres` | run dir + 目标路径 | Godot 可消费的 sprite 资源目录 |
 
 ## 调用顺序
 
@@ -64,6 +64,8 @@ ZHEWEI_IMAGEGEN_BACKEND=mock python3 tools/art/prepare_run.py --subject player_s
 ## 与 `tools/verify_scaffold.py` 的关系
 
 `verify_scaffold.py` 在每次 PR 都跑一遍。不要在它里面强制要求 `game/art/sprites/<subject>/spritesheet.png` 存在——AI 生成 sprite 是异步的任务，分支可能在没有 sprite 的状态下提交。`game/scripts/actors/animated_actor.gd` 必须能在没有 sprite 资源时优雅降级到 ColorRect 占位。
+
+Godot 集成优先读取 `spritesheet.png` + `manifest.json` 并在运行时构造 `SpriteFrames`。这是为了避免 headless/CI 环境依赖 `.import` 产物；`anim.tres` 可以继续作为工具输出和编辑器辅助资源，但不要让玩法场景直接依赖它。
 
 ## 常见问题
 
