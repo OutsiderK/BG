@@ -121,6 +121,25 @@ func is_transition() -> bool:
 func is_cooldown() -> bool:
 	return mode == Mode.COOLDOWN
 
+func get_current_transition_kind() -> String:
+	return _transition_kind_name(_transition_kind)
+
+func get_transition_kind() -> int:
+	return _transition_kind
+
+func get_cooldown_remaining() -> float:
+	return cooldown_remaining
+
+func get_transition_progress() -> float:
+	if mode != Mode.TRANSITION:
+		return 0.0
+	if _transition_duration <= 0.0:
+		return 1.0
+	return clampf(1.0 - (transition_remaining / _transition_duration), 0.0, 1.0)
+
+func is_collapse_transition() -> bool:
+	return mode == Mode.TRANSITION and _transition_kind == TransitionKind.COLLAPSE
+
 func get_mode_name() -> String:
 	return _mode_name(mode)
 
@@ -296,9 +315,17 @@ func _get_enemy_lane(enemy: Node, enemy_index: int, player_unfold_position: Vect
 	var preferred_lane := _get_optional_int(enemy, "unfold_preferred_lane", -1)
 	if enemy.has_method("get_unfold_lane"):
 		preferred_lane = int(enemy.call("get_unfold_lane"))
+	var lane := 0
 	if room_adapter != null and room_adapter.has_method("pick_enemy_unfold_lane"):
-		return int(room_adapter.call("pick_enemy_unfold_lane", enemy, enemy_index, player_unfold_position, preferred_lane))
-	return room_profile.pick_enemy_lane(player_unfold_position, enemy_index, preferred_lane)
+		lane = int(room_adapter.call("pick_enemy_unfold_lane", enemy, enemy_index, player_unfold_position, preferred_lane))
+	else:
+		lane = room_profile.pick_enemy_lane(player_unfold_position, enemy_index, preferred_lane)
+	return _normalize_lane(lane)
+
+func _normalize_lane(lane: int) -> int:
+	if room_profile != null and room_profile.has_method("normalize_lane_index"):
+		return int(room_profile.call("normalize_lane_index", lane))
+	return maxi(lane, 0)
 
 func _store_mapping_record(node: Node, original_position: Vector2, lane: int) -> void:
 	_mapped_records[node.get_instance_id()] = {
