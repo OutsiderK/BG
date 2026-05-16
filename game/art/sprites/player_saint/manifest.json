@@ -15,79 +15,92 @@
       "name": "idle",
       "atlas_row": 0,
       "frame_count": 6,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 2.0
     },
     {
       "name": "run-right",
       "atlas_row": 1,
       "frame_count": 8,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 4.0
     },
     {
       "name": "run-left",
       "atlas_row": 2,
       "frame_count": 8,
-      "method": "mirror"
+      "method": "mirror",
+      "anchor_drift_max": 4.0
     },
     {
       "name": "jump-start",
       "atlas_row": 3,
       "frame_count": 4,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 14.0
     },
     {
       "name": "fall",
       "atlas_row": 4,
       "frame_count": 4,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 4.0
     },
     {
       "name": "dash",
       "atlas_row": 5,
       "frame_count": 4,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 8.0
     },
     {
       "name": "sword-attack-1",
       "atlas_row": 6,
       "frame_count": 6,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 10.0
     },
     {
       "name": "sword-attack-2",
       "atlas_row": 7,
       "frame_count": 6,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 8.0
     },
     {
       "name": "hurt",
       "atlas_row": 8,
       "frame_count": 4,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 18.0
     },
     {
       "name": "death",
       "atlas_row": 9,
       "frame_count": 8,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 42.0
     },
     {
       "name": "unfold-enter",
       "atlas_row": 10,
       "frame_count": 6,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 18.0
     },
     {
       "name": "unfold-loop",
       "atlas_row": 11,
       "frame_count": 4,
-      "method": "generate"
+      "method": "generate",
+      "anchor_drift_max": 4.0
     },
     {
       "name": "unfold-exit",
       "atlas_row": 12,
       "frame_count": 6,
-      "method": "reverse"
+      "method": "reverse",
+      "anchor_drift_max": 18.0
     }
   ]
 }

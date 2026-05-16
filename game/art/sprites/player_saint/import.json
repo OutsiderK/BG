@@ -1,7 +1,22 @@
 {
   "subject": "player_saint",
   "version": "v0.3",
-  "imported_from_run": "docs/art/runs/player_saint-20260516T162117",
+  "imported_from_run": "source-rows-v0.3.1",
   "atlas": "game/art/sprites/player_saint/spritesheet.png",
-  "anim_resource": "game/art/sprites/player_saint/anim.tres"
+  "anim_resource": "game/art/sprites/player_saint/anim.tres",
+  "integrated_rows": [
+    "idle",
+    "run-right",
+    "run-left",
+    "jump-start",
+    "fall",
+    "dash",
+    "sword-attack-1",
+    "sword-attack-2",
+    "hurt",
+    "death",
+    "unfold-enter",
+    "unfold-loop",
+    "unfold-exit"
+  ]
 }

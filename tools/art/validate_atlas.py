@@ -127,9 +127,15 @@ def main() -> None:
         row_name = row["name"]
         atlas_row = row["atlas_row"]
         frame_count = row["frame_count"]
+        row_drift_max = float(row.get("anchor_drift_max", args.drift_max))
         ref_com: tuple[float, float] | None = None
 
-        row_report = {"name": row_name, "frame_count": frame_count, "issues": []}
+        row_report = {
+            "name": row_name,
+            "frame_count": frame_count,
+            "anchor_drift_max": row_drift_max,
+            "issues": [],
+        }
         for col in range(frame_count):
             cell = slice_cell(atlas, col, atlas_row, cell_w, cell_h)
             # frame max bytes: estimate by saving to bytes in PNG
@@ -149,8 +155,8 @@ def main() -> None:
             if edge > args.edge_alpha_max:
                 row_report["issues"].append(f"frame {col}: edge alpha {edge:.3f} > {args.edge_alpha_max}")
                 report["blocking_errors"].append(f"{row_name}/frame-{col}: non-transparent edge")
-            if drift > args.drift_max and col > 0:
-                row_report["issues"].append(f"frame {col}: anchor drift {drift:.2f}px > {args.drift_max}")
+            if drift > row_drift_max and col > 0:
+                row_report["issues"].append(f"frame {col}: anchor drift {drift:.2f}px > {row_drift_max}")
                 report["blocking_errors"].append(f"{row_name}/frame-{col}: anchor drift")
         report["rows"].append(row_report)
 

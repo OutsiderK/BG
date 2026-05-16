@@ -4,5 +4,6 @@
   "visual_qa": "pass",
   "hit_start_frame": 2,
   "hit_end_frame": 4,
-  "notes": "plain blade only; no arc baked into sprite; no forbidden symbols"
+  "notes": "plain blade only; no arc baked into sprite; no forbidden symbols",
+  "normalization": "integrator resized high-resolution exported frames to 128x128 RGBA, preserving alpha and bottom anchor"
 }
