@@ -3,7 +3,7 @@ class_name SwordAttack
 
 signal attack_started
 signal attack_finished
-signal hit_enemy(enemy: EnemyBase, damage: int)
+signal hit_enemy(enemy: Node, damage: int)
 signal hit_pause_requested(duration: float)
 
 @export var damage := 5

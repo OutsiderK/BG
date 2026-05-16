@@ -1,7 +1,7 @@
 extends Node2D
 class_name DemoRoom
 
-@export var lane_profile: RoomLaneProfile
+@export var lane_profile: Resource
 
 @onready var player_spawn: Marker2D = %PlayerSpawn
 @onready var unfold_floor_center: Marker2D = %UnfoldFloorCenter
@@ -9,10 +9,10 @@ class_name DemoRoom
 @onready var collapse_relocation_points: Node2D = %CollapseRelocationPoints
 @onready var next_room_entries: Node2D = %NextRoomEntries
 
-func get_lane_profile() -> RoomLaneProfile:
+func get_lane_profile() -> Resource:
 	return lane_profile
 
-func get_room_lane_profile() -> RoomLaneProfile:
+func get_room_lane_profile() -> Resource:
 	return lane_profile
 
 func get_unfold_lanes() -> Array[float]:

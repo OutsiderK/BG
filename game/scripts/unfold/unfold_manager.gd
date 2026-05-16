@@ -1,5 +1,8 @@
 extends Node
 
+const RoomLaneProfileScript := preload("res://game/scripts/rooms/room_lane_profile.gd")
+const UnfoldMapperScript := preload("res://game/scripts/unfold/unfold_mapper.gd")
+
 signal unfold_started
 signal unfold_transition_started(kind: String)
 signal unfold_mode_changed(mode: int, mode_name: String)
@@ -24,7 +27,7 @@ enum TransitionKind {
 var mode := Mode.VERTICAL
 var cooldown_remaining := 0.0
 var transition_remaining := 0.0
-var room_profile: RoomLaneProfile = RoomLaneProfile.new()
+var room_profile: Resource = RoomLaneProfileScript.new()
 var room_adapter: Node
 var player_node: Node
 var enemy_nodes: Array[Node] = []
@@ -121,7 +124,7 @@ func is_cooldown() -> bool:
 func get_mode_name() -> String:
 	return _mode_name(mode)
 
-func set_room_profile(profile: RoomLaneProfile) -> void:
+func set_room_profile(profile: Resource) -> void:
 	if profile != null:
 		room_profile = profile
 
@@ -131,11 +134,11 @@ func set_room_adapter(adapter: Node) -> void:
 		return
 	if room_adapter.has_method("get_room_lane_profile"):
 		var profile_candidate = room_adapter.call("get_room_lane_profile")
-		if profile_candidate is RoomLaneProfile:
+		if profile_candidate is Resource:
 			room_profile = profile_candidate
 		return
 	var property_candidate = room_adapter.get("room_lane_profile")
-	if property_candidate is RoomLaneProfile:
+	if property_candidate is Resource:
 		room_profile = property_candidate
 
 func set_player(node: Node) -> void:
@@ -224,7 +227,7 @@ func _apply_unfold_mapping() -> void:
 		var unfolded_player_position := _call_room_mapping(
 			"map_player_to_unfolded",
 			[player_node, player_position],
-			UnfoldMapper.map_player_to_unfolded(player_position, room_profile)
+			UnfoldMapperScript.map_player_to_unfolded(player_position, room_profile)
 		)
 		_store_mapping_record(player_node, player_position, -1)
 		_set_node_position(player_node, unfolded_player_position)
@@ -236,7 +239,7 @@ func _apply_unfold_mapping() -> void:
 			var unfolded_enemy_position := _call_room_mapping(
 				"map_enemy_to_unfolded",
 				[enemy, enemy_position, lane],
-				UnfoldMapper.map_enemy_to_unfolded(enemy_position, room_profile, lane)
+				UnfoldMapperScript.map_enemy_to_unfolded(enemy_position, room_profile, lane)
 			)
 			_store_mapping_record(enemy, enemy_position, lane)
 			_set_node_position(enemy, unfolded_enemy_position)
@@ -250,7 +253,7 @@ func _restore_vertical_mapping(reason: String) -> void:
 		var restored_player_position := _call_room_mapping(
 			"restore_player_to_vertical",
 			[player_node, player_unfold_position, reason],
-			UnfoldMapper.restore_player_to_vertical(player_unfold_position, room_profile)
+			UnfoldMapperScript.restore_player_to_vertical(player_unfold_position, room_profile)
 		)
 		_set_node_position(player_node, restored_player_position)
 	for enemy in _get_live_enemies():
@@ -260,7 +263,7 @@ func _restore_vertical_mapping(reason: String) -> void:
 		var restored_enemy_position := _call_room_mapping(
 			"restore_enemy_to_vertical",
 			[enemy, enemy_unfold_position, reason],
-			UnfoldMapper.restore_enemy_to_vertical(enemy_unfold_position, room_profile)
+			UnfoldMapperScript.restore_enemy_to_vertical(enemy_unfold_position, room_profile)
 		)
 		_set_node_position(enemy, restored_enemy_position)
 		if enemy.has_method("exit_unfolded"):
@@ -269,7 +272,7 @@ func _restore_vertical_mapping(reason: String) -> void:
 
 func _resolve_scene_participants() -> void:
 	if room_profile == null:
-		room_profile = RoomLaneProfile.new()
+		room_profile = RoomLaneProfileScript.new()
 	var current_scene := get_tree().current_scene
 	if current_scene == null:
 		return
@@ -344,7 +347,7 @@ func _find_first_node_with_room_profile(root: Node) -> Node:
 	if root.has_method("get_room_lane_profile"):
 		return root
 	var property_candidate = root.get("room_lane_profile")
-	if property_candidate is RoomLaneProfile:
+	if property_candidate is Resource:
 		return root
 	for child in root.get_children():
 		var found := _find_first_node_with_room_profile(child)
