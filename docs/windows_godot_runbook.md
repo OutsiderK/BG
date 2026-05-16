@@ -30,38 +30,60 @@ git push
 
 ## 2. Windows 第一次同步
 
-安装 Git for Windows 后，打开 PowerShell：
+目标位置：`C:\Users\joeyK\BG`
+
+### 方式 A：一键引导脚本（推荐）
+
+安装 Git for Windows 后，打开 PowerShell（普通用户即可，不需要管理员）：
 
 ```powershell
-cd D:\Projects
-git clone https://github.com/OutsiderK/BG.git CBZ
-cd CBZ
+$bootstrapUrl = "https://raw.githubusercontent.com/OutsiderK/BG/feat/demo-v0-integration/tools/windows/bootstrap.ps1"
+Invoke-WebRequest $bootstrapUrl -OutFile "$env:TEMP\bg_bootstrap.ps1"
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\bg_bootstrap.ps1"
+```
+
+脚本会：
+
+1. 确认 / 创建 `C:\Users\joeyK\BG`。
+2. 如果目录已经是仓库就 `git pull`，否则 `git clone`。
+3. 切到 `feat/demo-v0-integration` 分支。
+
+### 方式 B：手动命令
+
+```powershell
+cd C:\Users\joeyK
+git clone https://github.com/OutsiderK/BG.git BG
+cd BG
 git switch feat/demo-v0-integration
 ```
 
-如果 `D:\Projects` 不存在：
-
-```powershell
-mkdir D:\Projects
-cd D:\Projects
-```
+如果 `C:\Users\joeyK` 已经存在同名 `BG` 目录但里面不是仓库，先把它改名或删掉再 clone。
 
 ## 3. Windows 日常同步更新
 
-每次 Linux 端推送新提交后，在 Windows PowerShell 执行：
+每次 Linux 端推送新提交后，在 Windows PowerShell 执行下面任意一种：
+
+### 方式 A：纯同步
 
 ```powershell
-cd D:\Projects\CBZ
+cd C:\Users\joeyK\BG
+powershell -ExecutionPolicy Bypass -File .\tools\windows\sync_project.ps1
+```
+
+### 方式 B：同步并直接运行
+
+```powershell
+cd C:\Users\joeyK\BG
+powershell -ExecutionPolicy Bypass -File .\tools\windows\sync_and_run.ps1
+```
+
+### 方式 C：手动命令
+
+```powershell
+cd C:\Users\joeyK\BG
 git fetch origin
 git switch feat/demo-v0-integration
 git pull --ff-only origin feat/demo-v0-integration
-```
-
-也可以使用仓库内脚本：
-
-```powershell
-cd D:\Projects\CBZ
-powershell -ExecutionPolicy Bypass -File .\tools\windows\sync_project.ps1
 ```
 
 ## 4. 安装 Godot
@@ -81,17 +103,24 @@ $env:GODOT_EXE = "D:\Tools\Godot\Godot.exe"
 
 ## 5. Windows 运行 Demo
 
-方式 A：用脚本运行。
+方式 A：用脚本运行（自动找 Godot）。
 
 ```powershell
-cd D:\Projects\CBZ
+cd C:\Users\joeyK\BG
 powershell -ExecutionPolicy Bypass -File .\tools\windows\run_demo.ps1
 ```
 
-方式 B：用命令运行。
+方式 B：同步 + 运行一步到位。
 
 ```powershell
-cd D:\Projects\CBZ
+cd C:\Users\joeyK\BG
+powershell -ExecutionPolicy Bypass -File .\tools\windows\sync_and_run.ps1
+```
+
+方式 C：直接命令。
+
+```powershell
+cd C:\Users\joeyK\BG
 godot --path .
 ```
 
@@ -101,11 +130,11 @@ godot --path .
 godot4 --path .
 ```
 
-方式 C：用 Godot 编辑器运行。
+方式 D：用 Godot 编辑器运行。
 
 1. 打开 Godot。
 2. 选择 Import / 导入。
-3. 选择 `D:\Projects\CBZ\project.godot`。
+3. 选择 `C:\Users\joeyK\BG\project.godot`。
 4. 打开工程后按 `F5`。
 5. 若提示选择主场景，选择 `game/scenes/main/Main.tscn`。
 
