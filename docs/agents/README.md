@@ -40,3 +40,5 @@ godot --headless --path . --quit
 - 总路线图：[../ROADMAP.md](../ROADMAP.md)
 - v0.1 手感闭环：[../iterations/v0.1_handfeel_loop.md](../iterations/v0.1_handfeel_loop.md)
 - v0.1 prompts：[V0_1_PROMPTS.md](V0_1_PROMPTS.md)
+- v0.2 展开可读性：[../iterations/v0.2_unfold_readability.md](../iterations/v0.2_unfold_readability.md)
+- v0.2 prompts：[V0_2_PROMPTS.md](V0_2_PROMPTS.md)
