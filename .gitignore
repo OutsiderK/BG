@@ -10,4 +10,7 @@ build/
 .import/
 *.import
 
+# AI art pipeline runs (intermediate outputs, regeneratable)
+docs/art/runs/
+
 .DS_Store

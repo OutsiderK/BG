@@ -1,0 +1,7 @@
+{
+  "subject": "player_saint",
+  "version": "v0.3",
+  "imported_from_run": "docs/art/runs/player_saint-20260516T162117",
+  "atlas": "game/art/sprites/player_saint/spritesheet.png",
+  "anim_resource": "game/art/sprites/player_saint/anim.tres"
+}

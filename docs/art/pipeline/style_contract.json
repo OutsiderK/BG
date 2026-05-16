@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "name": "paper-fold-saint",
+  "description": "《折维圣徒》全局视觉契约。任何 hatch-* 调用都必须把本文件作为风格基线写入 prompt。",
+
+  "art_direction": {
+    "keywords": [
+      "手绘纸片剪影",
+      "被压成薄片的二维世界",
+      "石碑圣纹",
+      "断裂天空",
+      "几何祭坛",
+      "纸片层次",
+      "克制冷峻"
+    ],
+    "references": [
+      "Hollow Knight：剪影克制与轮廓优先",
+      "Sundered：高对比剪影与程序化光影",
+      "Sword & Sworcery：几何剪影与点缀像素",
+      "Dead Cells：动作清晰度与命中可读性"
+    ],
+    "anti_references": [
+      "过度厚涂或写实贴图",
+      "迪士尼式立体光影",
+      "RPG Maker 默认像素 chibi",
+      "饱和度极高的霓虹"
+    ]
+  },
+
+  "palette": {
+    "background_cool": ["#2A3640", "#3F5560", "#5A7283", "#9FB6C2"],
+    "ground_warm":    ["#3D2E1F", "#5A4738", "#8B7250", "#C9B091"],
+    "saint":          ["#E8E4D4", "#3D4A5F", "#1A2530", "#C9A24B"],
+    "enemy_corrupt":  ["#5A4738", "#8B3A3A", "#F5F0E0", "#26211C"],
+    "anchor_risk":    ["#9FCCDF", "#E0C66A", "#A8447A"],
+    "saint_accent_gold":   "#C9A24B",
+    "anchor_coord_cyan":   "#9FCCDF",
+    "corruption_violet":   "#A8447A",
+    "outline":             "#0F1418"
+  },
+
+  "silhouette": {
+    "outline_thickness_px": 2,
+    "outline_color": "#0F1418",
+    "internal_lines": "minimal",
+    "rim_light": "none",
+    "shadow_style": "no-cast-shadow",
+    "ground_anchor_style": "circle-fade",
+    "ground_anchor_color": "#0F141880"
+  },
+
+  "subject_proportions": {
+    "player_saint": {
+      "head_to_body": "1:5",
+      "shoulder_width_px": 36,
+      "cape_length_px": 64,
+      "default_facing": "right",
+      "weapon_position": "right hip"
+    },
+    "common_enemy": {
+      "head_to_body": "1:3",
+      "posture": "hunched-forward",
+      "default_facing": "ambiguous"
+    },
+    "boss": {
+      "head_to_body": "1:6 or larger",
+      "scale_multiplier": 1.5
+    }
+  },
+
+  "atlas_geometry": {
+    "default": {
+      "cell_size": [128, 128],
+      "atlas_grid_cols": 8,
+      "transparent_background": true,
+      "transparent_alpha_threshold": 0.05,
+      "edge_safe_margin_px": 6
+    },
+    "subject_overrides": {
+      "player_saint": { "cell_size": [128, 128] },
+      "common_enemy": { "cell_size": [96, 96] },
+      "boss":         { "cell_size": [192, 192] },
+      "fx":           { "cell_size": [128, 128] },
+      "ui_icon":      { "cell_size": [64, 64] }
+    }
+  },
+
+  "animation_defaults": {
+    "frame_rate_fps": 12,
+    "idle_frames": 6,
+    "run_frames": 8,
+    "attack_frames": 6,
+    "hurt_frames": 4,
+    "death_frames": 8,
+    "unfold_enter_frames": 6,
+    "unfold_loop_frames": 4
+  },
+
+  "motion_principles": {
+    "idle_breathing_amplitude_px": 2,
+    "run_step_alternation": "strict",
+    "attack_phases": ["windup", "hit", "recovery"],
+    "hit_frame_must_match_collision": true,
+    "foot_anchor_drift_max_px": 2,
+    "cape_followthrough_lag_frames": 1
+  },
+
+  "quality_gates": {
+    "atlas_max_bytes": 4194304,
+    "frame_max_bytes": 81920,
+    "background_alpha_edge_test_px": 8,
+    "background_alpha_max": 0.05,
+    "identity_drift_max_score": 0.15,
+    "stage1_blocking": [
+      "transparent_background",
+      "frame_anchor_drift",
+      "cell_alignment",
+      "frame_count_match",
+      "filesize_budget",
+      "naming_convention"
+    ],
+    "stage2_blocking": [
+      "identity_drift",
+      "empty_or_half_empty_frames",
+      "non_transparent_background",
+      "cropped_body_or_weapon",
+      "motion_semantics_wrong",
+      "weapon_orientation_wrong",
+      "style_drift_outside_palette"
+    ]
+  },
+
+  "prompt_locked_phrases": {
+    "global_prefix": "Hand-drawn paper-cut silhouette, flat compressed two-dimensional world, dark crisp 2px outline #0F1418, no cast shadow, transparent background, full body in frame, no text, no watermark.",
+    "global_negative": "no realistic rendering, no 3D shading, no rim light, no glow, no cast shadow, no blurry edges, no checker background, no margin labels, no UI overlay, no signature."
+  }
+}

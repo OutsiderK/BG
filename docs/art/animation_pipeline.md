@@ -1,174 +1,249 @@
 # 高质量 2D 动画工具链
 
-状态：v0.3 采用的动画管线决策稿。
+状态：v0.3 采用的动画管线决策稿。本版从原"Spine 主管线"改为"sprite sheet AI 管线主线 + 程序化几何/shader 辅助"。变更动机见末尾"路线变更说明"。
 
 ## 结论
 
-如果目标是“高要求、流畅、可扩展”的 2D 动画，主角、主要敌人和武器动画不应该主要依赖 Godot 内建节点手工补间，也不应该只用逐帧 sprite sheet 硬堆。当前项目建议采用：
+主角、敌人、Boss、武器、特效、UI 装饰的视觉内容**全部以 sprite sheet 形式产出**，由项目级 AI 美工管线生成。Godot 侧用 `AnimatedSprite2D` / `SpriteFrames` 直接消费，配合少量 shader 和 `_draw()` 做程序化补强。
 
-**主动画管线：Spine 2D + spine-godot runtime**
+具体管线：
 
-**辅助管线：Godot AnimationPlayer/AnimationTree + 少量逐帧 sprite sheet**
+**主管线：AI sprite sheet 生产线（见 [pipeline/SKILL.md](pipeline/SKILL.md)）**
 
-这套组合的原因很直接：Spine 更适合做角色骨骼、网格变形、IK、换装/换武器、动画混合和事件帧；Godot 负责玩法状态机、碰撞、FX 生命周期、HUD 和相机。逐帧动画只用于剑气、命中爆点、灾厄裂纹、死亡碎片等高冲击短效果。
+- 输入：[pipeline/identity_brief.md](pipeline/identity_brief.md) + [pipeline/style_contract.json](pipeline/style_contract.json) + 任务图 JSON
+- 后端可插拔：OpenAI `$imagegen`、Google Gemini 2.5 Flash Image / Imagen、本地 ComfyUI（SDXL + IP-Adapter + ControlNet）、mock（CI 用）
+- 输出：透明背景 atlas + `SpriteFrames` `.tres` + contact sheet + 预览 GIF + 验证报告
+
+**辅助管线：Godot 程序化补强**
+
+- `AnimationPlayer` / `AnimationTree`：玩法状态机、混合、UI/相机动画
+- 自绘 shader：剑气拖尾、坍缩扭曲、屏幕震动、灾厄裂纹、坐标线扩散
+- `_draw()` 程序化绘制：HUD 圣痕条、热度环、锚率指示、lane 提示
+- SVG / `Polygon2D`：UI 边框、几何祭坛、撤离点光圈
+
+**完全不再使用：Spine / DragonBones / Inochi2D / Rive 等骨骼运行时**
+
+不是它们不好，而是这些工具要求"图形编辑器交互"，AI agent 不能驱动。维持本项目"95%+ AI 化"目标，必须走 AI 擅长的路径：**生成图片**。
 
 ## 工具分工
 
 | 工具 | 用途 | 在本项目中的定位 |
 | --- | --- | --- |
-| Spine 2D | 角色骨骼动画、网格变形、IK、皮肤/附件、动画事件 | 主角、普通敌人、精英/Boss、武器挂点的主方案 |
-| spine-godot | 在 Godot 中播放 Spine 动画 | 把 Spine 导出的骨骼动画接入 Godot 4 项目 |
-| Godot AnimationPlayer/AnimationTree | 动画状态切换、混合、UI/FX/相机动画 | 驱动游戏状态，不作为复杂角色主编辑器 |
-| Toon Boom Harmony / Krita / Clip Studio | 高质量逐帧特效或关键表演帧 | 攻击残影、爆点、死亡碎片、过场短动画 |
-| Aseprite | 小尺寸 sprite、像素风 FX、快速 sprite sheet | 可做临时 FX 或小图标，不作为本项目主角主动画方案 |
-| TexturePacker 或同类 atlas 工具 | 打包逐帧 FX 图集 | 控制贴图尺寸和 draw call |
+| Codex `$imagegen` / Gemini Image API / 本地 ComfyUI | sprite sheet 帧生成 | 主管线图像生成后端，由 [pipeline/SKILL.md](pipeline/SKILL.md) 编排 |
+| Python (Pillow / numpy) | 切帧、atlas 合成、验证、contact sheet、GIF | 完全确定性的"几何/打包/QA 验证"管线，由 `tools/art/` 提供 |
+| Godot `AnimatedSprite2D` + `SpriteFrames` | 运行时动画播放 | 直接消费 sprite sheet，不需要外部 runtime |
+| Godot `AnimationPlayer` / `AnimationTree` | 状态机、混合、事件帧 | 玩法状态控制层，触发 `AnimatedSprite2D` 切换动画 |
+| Godot shader / `CanvasItemMaterial` | 剑气、坍缩、扭曲、裂纹 | 程序化 FX，AI agent 直接写 shader 代码 |
+| Godot `_draw()` / `Polygon2D` / `Line2D` | HUD、UI 装饰、几何元素 | 程序化绘制，AI agent 直接写代码 |
+| Inkscape（可选） | SVG 矢量素材：圣纹、祭坛装饰 | 手工/AI 生成 SVG 后导入 Godot |
+| Krita / LibreSprite（可选） | 关键特写或人工修补 | 仅在 AI 视觉 QA 反复失败时人工介入；非主路径 |
 
-## 为什么不是只用 Godot 内建动画
+## 为什么放弃骨骼动画路线
 
-Godot 本身有很强的动画系统，也支持 `AnimatedSprite2D`、`AnimationPlayer`、`AnimationTree` 和 2D skeleton。它适合项目集成和状态控制，但对高质量角色生产来说，问题在于：
+Spine、DragonBones、Inochi2D、Rive 都是**图形编辑器**——它们的工作流核心是"人在图形软件里调骨头、调权重、调插值"。这些步骤本质上**不能被 AI agent 完成**：
 
-- 复杂角色在 Godot 里直接绑骨、调权重、调曲线，效率不如专门动画软件。
-- 多个角色、多把武器、多套皮肤时，资产复用和动画版本管理会变重。
-- 攻击动画需要挂点、事件帧、混合、取消窗口、命中帧对齐，专门工具更稳。
-- 高要求动画不是“能动”就够，而是要能快速迭代、稳定复用、方便美术人员工作。
+- AI agent 是写代码 / 调用 API / 处理文本的工具
+- AI agent 无法操作图形软件 GUI
+- 即使用 Python 脚本驱动 Blender，生成的也只是机械动作，不具备"美术判断"
 
-所以 Godot 内建动画保留，但定位为运行时编排层。
+如果坚持骨骼动画路线：
 
-## 为什么首选 Spine
+- 美术工作只有 30-50% 能 AI 化（写脚本/接管/调状态机）
+- 剩余 50-70% 必须人来做绑骨、调权重、调动作韵律
+- 与项目"95%+ AI 化"目标冲突
 
-Spine 的官方 runtime 覆盖 Godot，并且官方说明 runtime 用于在游戏工具链中还原 Spine 动画、支持混合和运行时控制。对本项目最关键的是：
+sprite sheet 路线的代价：
 
-- 角色可以骨骼驱动，不需要每个动作都画完整帧。
-- 支持网格变形，斗篷、树皮敌人、灾厄裂纹可以更顺。
-- 支持皮肤/附件，后续武器、圣痕、装备表现能复用。
-- 支持事件帧，可以把攻击命中帧、脚步、音效、残影生成点和玩法脚本对齐。
-- 支持动画混合，idle/run/attack/hurt/dash/unfold 之间能减少生硬切换。
+- 单动作迭代要重生成几张图（不像骨骼调一根曲线那么快）
+- 文件体积更大（每帧独立保存）
+- 动作流畅度受帧数限制（建议 ≥ 8 帧/动作）
 
-代价：
+但 sprite sheet 的关键优势：
 
-- Spine 编辑器是商业软件，需要预算。
-- Godot 侧要引入 spine-godot runtime，构建和导出流程比纯 GDScript 更复杂。
-- CI/headless 和 Windows 导出要专门验证 runtime 插件。
-
-结论：如果你对美工要求高，这个代价是合理的。
+- 帧生成本质上就是"画图"，AI 图像模型的强项
+- Godot 原生 `AnimatedSprite2D` 直接消费，零 runtime 集成风险
+- 切帧、atlas、验证全部是确定性脚本，可以 100% 由 Claude/Codex 写出
+- contact sheet 可以让 AI 自己审查 AI 的产出，形成 QA 闭环
 
 ## 动画质量标准
 
 ### 运行标准
 
-- 游戏运行目标：60 FPS。
-- 角色动画播放必须支持平滑插值，不能出现肉眼明显卡帧。
-- 攻击动作允许快，但必须有预备、命中、收招三个可读阶段。
-- 命中帧必须和碰撞激活帧对齐，误差目标小于 `33ms`。
-- 动画切换不能让角色脚底、武器挂点或碰撞中心明显漂移。
+- 游戏运行目标：60 FPS
+- sprite 动画帧率：12 FPS（默认）；高速 row（dash、attack）可单独提到 24 FPS
+- 帧间过渡：`AnimatedSprite2D` 不做帧插值（保留剪影感）；状态切换通过 `AnimationTree` 状态混合
+- 命中帧必须和碰撞激活帧对齐——通过 `SpriteFrames` 的 `frame_changed` 信号触发碰撞盒激活，**误差锁死在同一 `_physics_process` tick**
+- 帧锚点（脚底/中心）跨帧漂移 ≤ 2px（由 `tools/art/validate_atlas.py` 强制校验）
 
-### 主角最低动作集
+### 主角最低动作集（v0.3 垂直切片）
 
-v0.3 要求做“完整主角垂直切片”，不是最终全动作库。
+任务图见 `docs/art/jobs/player_saint_v0.3.json`：
 
-| 动作 | 规格 |
-| --- | --- |
-| idle | 1 套，可循环，斗篷/呼吸/圣痕微动 |
-| run | 1 套，可循环，脚底接触点稳定 |
-| jump_start | 起跳前 4-6 帧感觉，不能像瞬移 |
-| fall | 下落姿态，和 jump_start 能顺接 |
-| dash | 0.12 秒左右，可配残影，方向清楚 |
-| sword_attack_1 | 横斩，命中帧清晰 |
-| sword_attack_2 | 返斩或下劈，给后续连段留口 |
-| hurt | 受击后仰，0.15-0.25 秒 |
-| death | 可先做短版，身体碎成坐标片或跪倒去饱和 |
-| unfold_enter | 被压成平面/坐标锁定的短动作 |
-| unfold_loop | 展开状态悬浮或俯视姿态 |
-| unfold_exit | 坍缩回横版的短动作 |
+| 动作 | 帧数 | 说明 |
+| --- | --- | --- |
+| `idle` | 6 | 可循环，斗篷/呼吸/圣痕微动 |
+| `run-right` | 8 | 可循环，脚底接触点稳定 |
+| `run-left` | (镜像) | 由 run-right 翻转衍生 |
+| `jump-start` | 4 | 起跳前压腿 + 离地，不能像瞬移 |
+| `fall` | 4 | 下落姿态，可循环 |
+| `dash` | 4 | 0.33 秒（24 FPS），可配残影 shader |
+| `sword-attack-1` | 6 | 横斩，命中帧第 3 帧 |
+| `sword-attack-2` | 6 | 返斩或下劈，给后续连段留口 |
+| `hurt` | 4 | 受击后仰，约 0.33 秒 |
+| `death` | 8 | 跪倒或碎成坐标片 |
+| `unfold-enter` | 6 | 被压成平面/坐标锁定的短动作 |
+| `unfold-loop` | 4 | 展开状态悬浮或俯视姿态，可循环 |
+| `unfold-exit` | (倒序) | 由 unfold-enter 倒放衍生 |
 
 ### 敌人最低动作集
 
-| 动作 | 规格 |
-| --- | --- |
-| idle | 可循环，轮廓有生命感 |
-| move | 与当前追击速度匹配 |
-| telegraph | 攻击前摇，至少 `0.35s` 可读 |
-| attack | 命中帧和攻击区域对齐 |
-| hurt | 可打断感明确 |
-| death | 碎裂/散落/淡出 |
+| 动作 | 帧数 | 说明 |
+| --- | --- | --- |
+| `idle` | 4-6 | 轮廓有生命感 |
+| `move` | 6-8 | 与当前追击速度匹配 |
+| `telegraph` | 4 | 攻击前摇，至少 0.35s 可读 |
+| `attack` | 6 | 命中帧和攻击区域对齐 |
+| `hurt` | 4 | 可打断感明确 |
+| `death` | 6-8 | 碎裂/散落/淡出 |
 
-### 剑与武器表现
+### 武器表现
 
-- 剑不只是贴在手上，必须绑定到武器挂点。
-- 攻击时剑身、手臂、攻击弧、命中盒同方向。
-- 攻击弧可以用 Spine slot、Godot Line2D/Polygon2D 或短 sprite sheet，但生命周期由攻击动画事件驱动。
-- 后续 6 武器都要遵守同一接口：`weapon_socket`、`hit_frame_event`、`fx_spawn_event`、`recovery_event`。
+剑作为 v0.3 唯一战斗武器，按下列规则集成：
 
-## Godot 接入策略
+- **剑作为主角 sprite 的一部分**绑定在 `weapon_socket_main` 位置，**不独立 sprite sheet**
+- 攻击弧用 shader 程序化绘制，跟随玩家朝向，由 `AnimationTree` 事件帧触发
+- 命中盒激活和动画第 3 帧对齐，通过 `AnimatedSprite2D.frame_changed` 信号
 
-### v0.3 原型目标
+其他 5 武器（矛、弓、法杖、回旋刃、圣铃）：
 
-v0.3 不要求一次性把 spine-godot runtime 完全集成到最终结构，但必须完成一次可验证的技术探针：
+- 主世界图标：64×64 sprite，由 `/hatch-weapon` 单独生成
+- 攻击 FX：每把武器单独的 FX sprite sheet（剑气/箭轨/法阵/回旋/音波）
+- v0.3 暂不接入完整玩法，但视觉资产可以并行生产
 
-- 在 `addons/` 或明确目录中引入 spine-godot 的最小可运行方案，或先建立外部依赖说明。
-- 新建一个 `AnimatedActor` 包装层，玩法脚本只调用 `play_state("run")`、`play_attack("sword_attack_1")`、`set_facing()`。
-- 攻击命中帧由动画事件或兼容接口触发，而不是写死在视觉节点里。
-- 如果 runtime 集成在当前环境受阻，必须用 Godot 原生 `AnimationPlayer` 做一个同接口替身，保证后续可替换为 Spine。
+## AnimatedActor 接口（v0.3 必做）
 
-### 文件建议
+无论后端如何变化，玩法脚本只通过 `AnimatedActor` 包装层调用。接口锁定如下：
+
+```gdscript
+class_name AnimatedActor
+extends Node2D
+
+signal hit_start(payload: Dictionary)
+signal hit_end(payload: Dictionary)
+signal spawn_fx(name: StringName, position: Vector2)
+signal footstep()
+signal recoverable()
+signal anim_finished(name: StringName)
+
+func play_state(state_name: StringName) -> void: ...
+func play_attack(attack_name: StringName) -> void: ...
+func set_facing(direction: int) -> void: ...      # -1 / +1
+func get_weapon_socket_global() -> Vector2: ...
+func is_in_recovery_window() -> bool: ...
+```
+
+实现内部由 `AnimatedSprite2D` + `AnimationTree` 驱动；玩法脚本永远不直接读 `frame` 字段、不直接调 `play()`。
+
+事件名约定（在 `SpriteFrames` 的 `frame_changed` 信号上挂接）：
+
+- `hit_start` / `hit_end`：命中盒激活/失活
+- `spawn_fx`：触发剑气/命中火花
+- `footstep`：脚步音
+- `recoverable`：可取消动作的最早帧
+
+## 目录建议
 
 ```text
 game/art/
-  source/
-    spine/
-      player/
-      enemies/
-      weapons/
-    frame_fx/
-  exported/
-    spine/
-    atlases/
+  README.md
+  sprites/
+    player_saint/
+      spritesheet.png
+      anim.tres
+      manifest.json
+    enemy_bark_corrupt/
+    room_thinforest/
+    weapons/
+    fx/
+    ui/
+docs/art/
+  animation_pipeline.md          # 本文件
+  pipeline/
+    SKILL.md                     # 项目级 skill 文档
+    style_contract.json
+    identity_brief.md
+    prompts/
+  jobs/                          # 任务图 JSON
+  runs/                          # AI 生成中间产物（gitignore）
+
+tools/art/
+  README.md
+  prepare_run.py
+  extract_strip_frames.py
+  inspect_frames.py
+  compose_atlas.py
+  validate_atlas.py
+  make_contact_sheet.py
+  render_animation_previews.py
+  derive_mirrored_row.py
+  godot_import.py
+
 game/scenes/actors/
 game/scripts/actors/animated_actor.gd
 game/scripts/animation/animation_event_bridge.gd
-docs/art/animation_pipeline.md
 ```
 
-### 命名规范
+## 命名规范
 
-- 动画状态名使用小写蛇形：`idle`、`run`、`dash`、`sword_attack_1`。
-- 事件名使用玩法含义：`hit_start`、`hit_end`、`spawn_fx`、`footstep`、`recoverable`。
-- 武器挂点统一：`weapon_socket_main`、`weapon_socket_back`。
-- 脚底定位点统一：`ground_anchor`。
+- 动画状态名：`idle`、`run-right`、`run-left`、`sword-attack-1`、`unfold-enter`、`unfold-loop`、`unfold-exit`
+- 帧文件：`row-<name>-frame-<n>.png`（0-indexed）
+- atlas 合成名：`spritesheet.png`（每个 subject 一张）
+- Godot 资源名：`anim.tres`（SpriteFrames 资源）
+- 事件名（frame_changed 信号回调）：`hit_start`、`hit_end`、`spawn_fx`、`footstep`、`recoverable`
+- 武器挂点：`weapon_socket_main`、`weapon_socket_back`
+- 脚底定位点：`ground_anchor`
 
-## 备选方案
+## 图像生成后端
 
-### 预算不足：Godot 原生骨骼 + AnimationTree
+[pipeline/SKILL.md](pipeline/SKILL.md) 的"图像生成后端（可插拔）"段落定义具体接入方式。简表：
 
-可行，但只建议用于 demo 或小规模角色。优点是免费、无外部 runtime；缺点是美术生产效率和复杂动作质量上限较低。
+| 后端 | 适合场景 | 成本 |
+| --- | --- | --- |
+| `codex-imagegen` | Codex App 用户 | 计入 Codex 用量 |
+| `openai` | 自有 OpenAI API key | $0.04-0.08 / 图 |
+| `gemini` | 角色一致性强（Nano Banana） | $0.03 / 图左右 |
+| `imagen` | Google Imagen 3 | 视 Vertex AI 报价 |
+| `comfyui` | 本地 GPU、零经常性成本 | 仅电费 + 一次性 LoRA 训练时间 |
+| `mock` | CI / 没 GPU/API key 时验证管线 | 免费 |
 
-### 强逐帧风格：Toon Boom / Krita / Clip Studio + sprite sheet
-
-画面上限很高，但制作成本高、资源体积大，动作改动贵。适合关键攻击、死亡、Boss 特写，不适合作为所有角色的基础移动和普攻主方案。
-
-### 像素风：Aseprite + Godot importer
-
-如果项目改成像素美术，Aseprite 是很好的选择。但当前“折维圣徒”的二维封印、斗篷、树皮敌人、空间压缩效果更适合骨骼 + 变形 + 局部逐帧 FX。
-
-### Rive / DragonBones
-
-Rive 更偏 UI/矢量交互，Godot 游戏角色战斗管线风险较高。DragonBones 有免费优势，但 Godot 4 生态和长期维护确定性不如 Spine，不建议作为核心管线。
+**v0.3 推荐起步组合**：先用 `gemini`（Nano Banana 一致性强且便宜）打通管线 ⇒ 验证质量满意后逐步迁移到 `comfyui` + 项目 LoRA 实现长期零成本。
 
 ## 验收方式
 
-v0.3 美术验收不只看截图，还要看动起来：
+v0.3 美术验收（与 [../iterations/v0.3_art_weapon_vertical_slice.md](../iterations/v0.3_art_weapon_vertical_slice.md) 对齐）：
 
-- 录制 20 秒战斗片段：跑动、跳跃、冲刺、两段剑击、受击、展开、坍缩。
-- 角色动作没有明显卡顿、脚滑、武器漂移。
-- 攻击命中帧和视觉弧线一致。
-- 同一角色从 idle 到 run 到 attack 到 hurt 的切换没有突然缩放或穿帮。
-- Godot headless 可加载，Windows Godot 可运行。
+- `python3 tools/verify_scaffold.py` 通过
+- `python3 tools/art/validate_atlas.py` 在主角 atlas 上通过
+- `godot4 --headless --path . --quit` 通过
+- 录制 20 秒战斗片段：跑动、跳跃、冲刺、两段剑击、受击、展开、坍缩——动作不卡、脚不滑、剪影统一
+- AI 视觉 QA（contact sheet + GIF）`visual_qa=pass`
+
+## 路线变更说明
+
+本文件初版采用"Spine 主管线 + Godot 编排 + 逐帧 FX"方案。**2026-05-16 改为现在的 sprite sheet AI 管线方案**，原因：
+
+1. 用户明确目标为"95%+ AI 完成美工"
+2. 骨骼动画的核心工作（绑骨/调权重/调动作韵律）AI agent 无法完成
+3. Hatch Pet（OpenAI Codex 内置 skill）证明了 sprite sheet 任务图 + 身份锁定 + 两层 QA + 最小修复 这套模式可以让 sprite sheet 美工管线达到 90%+ AI 化
+4. sprite sheet + Godot AnimatedSprite2D 是 Godot 原生路径，零外部 runtime 依赖
+5. AI 图像生成模型（Nano Banana、SDXL + IP-Adapter）的角色一致性已足以支撑战斗角色级别需求
+
+骨骼动画路线作为远期备选保留：若项目后期需要复杂武器换装系统或大量皮肤变体（v0.6 之后），届时再评估是否引入 Spine。
 
 ## 参考
 
-- Spine Godot runtime 文档：https://us.esotericsoftware.com/spine-godot
-- Spine runtimes 总览：https://us.esotericsoftware.com/spine-runtimes
-- Godot AnimationTree 文档：https://docs.godotengine.org/en/stable/tutorials/animation/animation_tree.html
-- Godot 2D skeletons 文档：https://docs.godotengine.org/en/stable/tutorials/animation/2d_skeletons.html
-- Godot 2D sprite animation 文档：https://docs.godotengine.org/en/stable/tutorials/2d/2d_sprite_animation.html
-- Toon Boom Harmony game export 说明：https://helpcentre.toonboom.com/hc/en-ca/articles/41025010026771-What-are-the-different-types-of-game-exports-in-Harmony
+- 项目级 skill 详细规范：[pipeline/SKILL.md](pipeline/SKILL.md)
+- OpenAI Hatch Pet 源参考：<https://github.com/openai/skills/blob/main/skills/.curated/hatch-pet/SKILL.md>
+- Godot SpriteFrames 文档：<https://docs.godotengine.org/en/stable/classes/class_spriteframes.html>
+- Godot AnimatedSprite2D 文档：<https://docs.godotengine.org/en/stable/classes/class_animatedsprite2d.html>
+- Godot AnimationTree 文档：<https://docs.godotengine.org/en/stable/tutorials/animation/animation_tree.html>

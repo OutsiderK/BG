@@ -1,0 +1,30 @@
+{
+  "subject": "player_saint",
+  "version": "v0.3",
+  "style_contract": "docs/art/pipeline/style_contract.json",
+  "identity_brief": "docs/art/pipeline/identity_brief.md",
+  "prompt_overrides": null,
+  "cell_size": [128, 128],
+  "atlas_grid": [8, 13],
+  "frame_rate": 12,
+  "base": {
+    "pose": "neutral-facing-right",
+    "size": [512, 512],
+    "notes": "斗篷自然下垂、剑挂腰间、面罩可见、双脚平站、表情克制；圣痕在胸前隐约可见"
+  },
+  "rows": [
+    { "name": "idle",           "frames": 6, "deps": ["base"] },
+    { "name": "run-right",      "frames": 8, "deps": ["base", "idle"] },
+    { "name": "run-left",       "method": "mirror",  "from": "run-right" },
+    { "name": "jump-start",     "frames": 4, "deps": ["base"] },
+    { "name": "fall",           "frames": 4, "deps": ["base", "jump-start"] },
+    { "name": "dash",           "frames": 4, "deps": ["base"] },
+    { "name": "sword-attack-1", "frames": 6, "deps": ["base"] },
+    { "name": "sword-attack-2", "frames": 6, "deps": ["base", "sword-attack-1"] },
+    { "name": "hurt",           "frames": 4, "deps": ["base"] },
+    { "name": "death",          "frames": 8, "deps": ["base"] },
+    { "name": "unfold-enter",   "frames": 6, "deps": ["base"] },
+    { "name": "unfold-loop",    "frames": 4, "deps": ["unfold-enter"] },
+    { "name": "unfold-exit",    "method": "reverse", "from": "unfold-enter" }
+  ]
+}
