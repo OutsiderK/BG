@@ -22,10 +22,12 @@ var dash_cooldown_remaining := 0.0
 var dash_charges := 2
 var dash_direction := Vector2.RIGHT
 var dead := false
+@onready var sword_attack: Node = get_node_or_null("SwordAttack")
 
 func _ready() -> void:
 	hp = max_hp
 	dash_charges = max_dash_charges
+	RunState.set_health(hp, max_hp)
 	UnfoldManager.unfold_started.connect(_on_unfold_started)
 	UnfoldManager.unfold_ended.connect(_on_unfold_ended)
 
@@ -38,6 +40,8 @@ func _physics_process(delta: float) -> void:
 			UnfoldManager.start_unfold()
 	if Input.is_action_just_pressed("dash"):
 		_try_start_dash()
+	if Input.is_action_just_pressed("attack"):
+		_try_attack()
 	if UnfoldManager.is_unfolded():
 		_process_unfolded(delta)
 	else:
@@ -87,6 +91,11 @@ func _try_start_dash() -> void:
 	if dash_charges <= 0:
 		dash_cooldown_remaining = dash_cooldown
 
+func _try_attack() -> void:
+	if sword_attack == null or not sword_attack.has_method("try_attack"):
+		return
+	sword_attack.call("try_attack", facing, self)
+
 func _get_dash_direction() -> Vector2:
 	if UnfoldManager.is_unfolded():
 		var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -115,6 +124,7 @@ func apply_damage(amount: int) -> void:
 	if dead or amount <= 0 or is_invulnerable():
 		return
 	hp = maxi(0, hp - amount)
+	RunState.set_health(hp, max_hp)
 	hit_invulnerable_remaining = Balance.PLAYER_HIT_INVULN
 	RunState.add_heat(Balance.HEAT_DAMAGED)
 	damaged.emit(amount)

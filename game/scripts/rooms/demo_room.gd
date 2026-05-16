@@ -12,6 +12,9 @@ class_name DemoRoom
 func get_lane_profile() -> RoomLaneProfile:
 	return lane_profile
 
+func get_room_lane_profile() -> RoomLaneProfile:
+	return lane_profile
+
 func get_unfold_lanes() -> Array[float]:
 	if lane_profile == null:
 		return []
