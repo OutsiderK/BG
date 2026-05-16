@@ -59,6 +59,18 @@ godot --headless --path . --quit
 godot4 --headless --path . --script tools/godot/enemy_ai_smoke.gd
 ```
 
+完整 smoke tests：
+
+```bash
+godot4 --headless --path . --script tools/godot/enemy_ai_smoke.gd
+godot4 --headless --path . --script tools/godot/player_state_smoke.gd
+godot4 --headless --path . --script tools/godot/enemy_attack_smoke.gd
+godot4 --headless --path . --script tools/godot/unfold_mapping_smoke.gd
+godot4 --headless --path . --script tools/godot/lane_mapping_smoke.gd
+godot4 --headless --path . --script tools/godot/hud_unfold_smoke.gd
+godot4 --headless --path . --script tools/godot/unfold_transition_smoke.gd
+```
+
 ## 下一步
 
 下一轮工程优先级见 [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)。
