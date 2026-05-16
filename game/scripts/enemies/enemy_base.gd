@@ -13,7 +13,9 @@ signal counter_unfold_requested(enemy: EnemyBase, target: Node)
 @export var detection_range := 560.0
 @export var attack_range := 42.0
 @export var attack_windup := 0.22
+@export var attack_active_time := 0.12
 @export var attack_cooldown := 1.0
+@export var attack_interrupt_cooldown := 0.45
 @export var acceleration := 900.0
 @export var friction := 1200.0
 @export_enum("normal", "elite", "boss") var enemy_rank := "normal"
@@ -28,13 +30,21 @@ var knockback_velocity := Vector2.ZERO
 var target: Node2D
 var attack_cooldown_remaining := 0.0
 var attack_windup_remaining := 0.0
+var attack_active_remaining := 0.0
+var attack_interrupt_flash_remaining := 0.0
 var pending_attack_target: Node2D
+var attack_direction := Vector2.RIGHT
+@onready var body_visual: CanvasItem = get_node_or_null("ColorRect") as CanvasItem
+@onready var attack_telegraph_visual: CanvasItem = get_node_or_null("AttackTelegraph") as CanvasItem
+@onready var attack_window_visual: CanvasItem = get_node_or_null("AttackWindow") as CanvasItem
+@onready var attack_cooldown_visual: CanvasItem = get_node_or_null("CooldownPip") as CanvasItem
 
 func _ready() -> void:
 	hp = max_hp
 	add_to_group("enemies")
 	UnfoldManager.register_enemy(self)
 	tree_exiting.connect(_on_tree_exiting)
+	_update_attack_visuals()
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
@@ -48,6 +58,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		_process_idle(delta)
 	move_and_slide()
+	_update_attack_visuals()
 
 func apply_damage(amount: int, _source: Node = null) -> bool:
 	if is_dead or amount <= 0:
@@ -55,6 +66,8 @@ func apply_damage(amount: int, _source: Node = null) -> bool:
 	hp = maxi(hp - amount, 0)
 	RunState.add_heat(Balance.HEAT_HIT)
 	damaged.emit(self, amount, hp, max_hp)
+	if attack_windup_remaining > 0.0:
+		_interrupt_attack_windup()
 	if hp <= 0:
 		_die()
 	return true
@@ -85,6 +98,8 @@ func exit_unfolded() -> void:
 
 func _tick_timers(delta: float) -> void:
 	attack_cooldown_remaining = maxf(0.0, attack_cooldown_remaining - delta)
+	attack_active_remaining = maxf(0.0, attack_active_remaining - delta)
+	attack_interrupt_flash_remaining = maxf(0.0, attack_interrupt_flash_remaining - delta)
 	if attack_windup_remaining <= 0.0:
 		return
 	attack_windup_remaining = maxf(0.0, attack_windup_remaining - delta)
@@ -103,7 +118,7 @@ func _process_knockback(delta: float) -> void:
 	knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, move_speed * 8.0 * delta)
 
 func _process_chase(delta: float, active_target: Node2D) -> void:
-	if attack_windup_remaining > 0.0:
+	if attack_windup_remaining > 0.0 or attack_active_remaining > 0.0:
 		_process_attack_windup(delta)
 		return
 	if UnfoldManager.is_unfolded():
@@ -162,11 +177,15 @@ func _process_idle(delta: float) -> void:
 			velocity.y = minf(velocity.y, 0.0)
 
 func _begin_attack(active_target: Node2D) -> void:
-	if attack_cooldown_remaining > 0.0:
+	if attack_cooldown_remaining > 0.0 or attack_windup_remaining > 0.0 or attack_active_remaining > 0.0:
 		return
 	pending_attack_target = active_target
+	_set_attack_direction(active_target.global_position - global_position)
+	if attack_windup <= 0.0:
+		_commit_attack()
+		return
 	attack_windup_remaining = attack_windup
-	attack_cooldown_remaining = attack_cooldown
+	_update_attack_visuals()
 
 func _commit_attack() -> void:
 	if pending_attack_target == null or not is_instance_valid(pending_attack_target):
@@ -178,6 +197,76 @@ func _commit_attack() -> void:
 		elif pending_attack_target.has_method("take_damage"):
 			pending_attack_target.call("take_damage", contact_damage)
 	pending_attack_target = null
+	attack_active_remaining = attack_active_time
+	attack_cooldown_remaining = attack_cooldown
+	_update_attack_visuals()
+
+func _interrupt_attack_windup() -> void:
+	pending_attack_target = null
+	attack_windup_remaining = 0.0
+	attack_interrupt_flash_remaining = 0.18
+	attack_cooldown_remaining = maxf(attack_cooldown_remaining, attack_interrupt_cooldown)
+	_update_attack_visuals()
+
+func _set_attack_direction(offset: Vector2) -> void:
+	if offset.length_squared() > 0.01:
+		attack_direction = offset.normalized()
+	elif attack_direction == Vector2.ZERO:
+		attack_direction = Vector2.RIGHT
+
+func _update_attack_visuals() -> void:
+	var is_winding_up := attack_windup_remaining > 0.0
+	var is_active := attack_active_remaining > 0.0
+	var is_cooling_down := attack_cooldown_remaining > 0.0 and not is_winding_up and not is_active
+	_set_visual_visible(attack_telegraph_visual, is_winding_up)
+	_set_visual_visible(attack_window_visual, is_active)
+	_set_visual_visible(attack_cooldown_visual, is_cooling_down)
+
+	if attack_telegraph_visual != null:
+		var windup_progress := 1.0 - (attack_windup_remaining / maxf(attack_windup, 0.001))
+		_place_directional_visual(attack_telegraph_visual, clampf(windup_progress, 0.0, 1.0))
+	if attack_window_visual != null:
+		_place_directional_visual(attack_window_visual, 1.0)
+	if attack_cooldown_visual != null:
+		var cooldown_progress := attack_cooldown_remaining / maxf(attack_cooldown, 0.001)
+		_set_visual_scale(attack_cooldown_visual, Vector2(maxf(cooldown_progress, 0.08), 1.0))
+
+	if body_visual == null:
+		return
+	if attack_interrupt_flash_remaining > 0.0:
+		body_visual.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	elif is_active:
+		body_visual.modulate = Color(1.3, 0.35, 0.25, 1.0)
+	elif is_winding_up:
+		body_visual.modulate = Color(1.2, 0.95, 0.35, 1.0)
+	elif is_cooling_down:
+		body_visual.modulate = Color(0.7, 0.9, 1.0, 1.0)
+	else:
+		body_visual.modulate = Color.WHITE
+
+func _set_visual_visible(visual: CanvasItem, is_visible: bool) -> void:
+	if visual != null:
+		visual.visible = is_visible
+
+func _place_directional_visual(visual: CanvasItem, progress: float) -> void:
+	var direction := attack_direction
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT
+	var scale := Vector2(0.35 + 0.65 * progress, 1.0)
+	if visual is Node2D:
+		var node := visual as Node2D
+		node.rotation = direction.angle()
+		node.scale = scale
+	elif visual is Control:
+		var control := visual as Control
+		control.rotation = direction.angle()
+		control.scale = scale
+
+func _set_visual_scale(visual: CanvasItem, scale: Vector2) -> void:
+	if visual is Node2D:
+		(visual as Node2D).scale = scale
+	elif visual is Control:
+		(visual as Control).scale = scale
 
 func _resolve_target() -> Node2D:
 	if target != null and is_instance_valid(target) and not target.is_queued_for_deletion():
