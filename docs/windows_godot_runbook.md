@@ -147,7 +147,32 @@ godot4 --path .
 - `1`：平面展开 / 提前坍缩
 - `E`：交互预留
 
-## 7. 常见问题
+## 7. Windows 校验
+
+同步后可以先跑静态校验：
+
+```powershell
+cd C:\Users\joeyK\BG
+python tools\verify_scaffold.py
+```
+
+如果 PowerShell 能找到 Godot CLI，按顺序跑 smoke tests。不要并行启动多个 Godot headless 进程，部分测试会改全局时间或 Autoload 状态。
+
+```powershell
+godot --headless --path . --script tools/godot/animated_actor_smoke.gd
+godot --headless --path . --script tools/godot/sword_event_smoke.gd
+godot --headless --path . --script tools/godot/player_state_smoke.gd
+godot --headless --path . --script tools/godot/enemy_ai_smoke.gd
+godot --headless --path . --script tools/godot/enemy_attack_smoke.gd
+godot --headless --path . --script tools/godot/unfold_mapping_smoke.gd
+godot --headless --path . --script tools/godot/lane_mapping_smoke.gd
+godot --headless --path . --script tools/godot/hud_unfold_smoke.gd
+godot --headless --path . --script tools/godot/unfold_transition_smoke.gd
+```
+
+如果你的 Godot 命令名是 `godot4`，把上面的 `godot` 替换成 `godot4`。
+
+## 8. 常见问题
 
 ### 找不到 godot 命令
 
