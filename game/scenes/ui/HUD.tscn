@@ -9,13 +9,13 @@ script = ExtResource("1_hud_script")
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 408.0
-offset_bottom = 224.0
+offset_bottom = 286.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
 offset_left = 12.0
 offset_top = 10.0
 offset_right = 380.0
-offset_bottom = 196.0
+offset_bottom = 258.0
 theme_override_constants/separation = 6
 
 [node name="HealthLabel" type="Label" parent="Panel/VBoxContainer"]
@@ -38,6 +38,21 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(340, 16)
 value = 0.0
 show_percentage = false
+
+[node name="HeatHintLabel" type="Label" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+text = "圣痕积累中"
+
+[node name="UnfoldStatusRow" type="HBoxContainer" parent="Panel/VBoxContainer"]
+theme_override_constants/separation = 14
+
+[node name="UnfoldModeLabel" type="Label" parent="Panel/VBoxContainer/UnfoldStatusRow"]
+unique_name_in_owner = true
+text = "模式 纵平面"
+
+[node name="UnfoldDetailLabel" type="Label" parent="Panel/VBoxContainer/UnfoldStatusRow"]
+unique_name_in_owner = true
+text = "距展开 100"
 
 [node name="ResourceRow" type="HBoxContainer" parent="Panel/VBoxContainer"]
 theme_override_constants/separation = 18
@@ -66,9 +81,17 @@ unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 text = "+0.0%"
 
-[node name="CorruptionLabel" type="Label" parent="Panel/VBoxContainer"]
+[node name="CorruptionRow" type="HBoxContainer" parent="Panel/VBoxContainer"]
+theme_override_constants/separation = 10
+
+[node name="CorruptionLabel" type="Label" parent="Panel/VBoxContainer/CorruptionRow"]
 unique_name_in_owner = true
 text = "侵蚀 安全 0.0"
+
+[node name="CorruptionHintLabel" type="Label" parent="Panel/VBoxContainer/CorruptionRow"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+text = "+0.0 侵蚀"
 
 [node name="SaveLabel" type="Label" parent="Panel/VBoxContainer"]
 unique_name_in_owner = true
