@@ -1,12 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://bg_sword_attack"]
+[gd_scene load_steps=4 format=3 uid="uid://bg_sword_attack"]
 
 [ext_resource type="Script" path="res://game/scripts/combat/sword_attack.gd" id="1_sword_attack"]
+[ext_resource type="PackedScene" path="res://game/scenes/fx/DamageNumberFx.tscn" id="2_damage_number_fx"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_sword"]
 size = Vector2(52, 34)
 
 [node name="SwordAttack" type="Node2D"]
 script = ExtResource("1_sword_attack")
+hit_feedback_scene = ExtResource("2_damage_number_fx")
 
 [node name="Hitbox" type="Area2D" parent="."]
 monitoring = false
