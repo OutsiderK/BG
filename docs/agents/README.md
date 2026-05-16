@@ -42,3 +42,4 @@ godot --headless --path . --quit
 - v0.1 prompts：[V0_1_PROMPTS.md](V0_1_PROMPTS.md)
 - v0.2 展开可读性：[../iterations/v0.2_unfold_readability.md](../iterations/v0.2_unfold_readability.md)
 - v0.2 prompts：[V0_2_PROMPTS.md](V0_2_PROMPTS.md)
+- v0.3 美术与武器垂直切片：[../iterations/v0.3_art_weapon_vertical_slice.md](../iterations/v0.3_art_weapon_vertical_slice.md)
