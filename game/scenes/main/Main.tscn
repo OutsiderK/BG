@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://bg_main_scene"]
+[gd_scene load_steps=6 format=3 uid="uid://bg_main_scene"]
 
 [ext_resource type="Script" path="res://game/scripts/main/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://game/scenes/player/Player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://game/scenes/ui/HUD.tscn" id="3_hud"]
 [ext_resource type="PackedScene" path="res://game/scenes/rooms/DemoRoom.tscn" id="4_demo_room"]
+[ext_resource type="Script" path="res://game/scripts/camera/follow_camera.gd" id="5_camera"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -13,5 +14,11 @@ script = ExtResource("1_main")
 [node name="Player" parent="." instance=ExtResource("2_player")]
 unique_name_in_owner = true
 position = Vector2(220, 480)
+
+[node name="FollowCamera" type="Camera2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(640, 360)
+script = ExtResource("5_camera")
+room_bounds = Rect2(0, 0, 1280, 720)
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
