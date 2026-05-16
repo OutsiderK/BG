@@ -1,0 +1,232 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://game/scripts/rooms/demo_room.gd" id="1_room_script"]
+[ext_resource type="Resource" path="res://game/data/rooms/demo_room_lane_profile.tres" id="2_lane_profile"]
+[ext_resource type="PackedScene" path="res://game/scenes/enemies/DummyEnemy.tscn" id="3_dummy_enemy"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(1280, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_wide"]
+size = Vector2(240, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_short"]
+size = Vector2(180, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_trunk"]
+size = Vector2(56, 116)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_root"]
+size = Vector2(120, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exit"]
+size = Vector2(42, 92)
+
+[node name="DemoRoom" type="Node2D" groups=["rooms"]]
+script = ExtResource("1_room_script")
+lane_profile = ExtResource("2_lane_profile")
+
+[node name="Backdrop" type="Node2D" parent="."]
+
+[node name="SkyBand" type="ColorRect" parent="Backdrop"]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.105882, 0.145098, 0.12549, 1)
+
+[node name="ThinCanopy" type="ColorRect" parent="Backdrop"]
+offset_right = 1280.0
+offset_bottom = 120.0
+color = Color(0.0705882, 0.121569, 0.0901961, 1)
+
+[node name="LanePreview" type="Node2D" parent="."]
+
+[node name="LaneBack" type="ColorRect" parent="LanePreview"]
+offset_left = 80.0
+offset_top = 118.0
+offset_right = 1200.0
+offset_bottom = 122.0
+color = Color(0.35, 0.62, 0.48, 0.35)
+
+[node name="LaneMidBack" type="ColorRect" parent="LanePreview"]
+offset_left = 80.0
+offset_top = 278.0
+offset_right = 1200.0
+offset_bottom = 282.0
+color = Color(0.35, 0.62, 0.48, 0.35)
+
+[node name="LaneMidFront" type="ColorRect" parent="LanePreview"]
+offset_left = 80.0
+offset_top = 438.0
+offset_right = 1200.0
+offset_bottom = 442.0
+color = Color(0.35, 0.62, 0.48, 0.35)
+
+[node name="LaneFront" type="ColorRect" parent="LanePreview"]
+offset_left = 80.0
+offset_top = 598.0
+offset_right = 1200.0
+offset_bottom = 602.0
+color = Color(0.35, 0.62, 0.48, 0.35)
+
+[node name="Geometry" type="Node2D" parent="."]
+
+[node name="Ground" type="StaticBody2D" parent="Geometry"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/Ground"]
+position = Vector2(640, 540)
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Visual" type="ColorRect" parent="Geometry/Ground"]
+offset_top = 516.0
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.180392, 0.215686, 0.137255, 1)
+
+[node name="LowBranchPlatform" type="StaticBody2D" parent="Geometry"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/LowBranchPlatform"]
+position = Vector2(470, 430)
+shape = SubResource("RectangleShape2D_platform_wide")
+
+[node name="Visual" type="ColorRect" parent="Geometry/LowBranchPlatform"]
+offset_left = 350.0
+offset_top = 418.0
+offset_right = 590.0
+offset_bottom = 442.0
+color = Color(0.352941, 0.247059, 0.137255, 1)
+
+[node name="HighBranchPlatform" type="StaticBody2D" parent="Geometry"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/HighBranchPlatform"]
+position = Vector2(900, 350)
+shape = SubResource("RectangleShape2D_platform_short")
+
+[node name="Visual" type="ColorRect" parent="Geometry/HighBranchPlatform"]
+offset_left = 810.0
+offset_top = 338.0
+offset_right = 990.0
+offset_bottom = 362.0
+color = Color(0.352941, 0.247059, 0.137255, 1)
+
+[node name="ThinTreeTrunk" type="StaticBody2D" parent="Geometry"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/ThinTreeTrunk"]
+position = Vector2(320, 458)
+shape = SubResource("RectangleShape2D_trunk")
+
+[node name="Visual" type="ColorRect" parent="Geometry/ThinTreeTrunk"]
+offset_left = 292.0
+offset_top = 400.0
+offset_right = 348.0
+offset_bottom = 516.0
+color = Color(0.254902, 0.164706, 0.101961, 1)
+
+[node name="RootBulwark" type="StaticBody2D" parent="Geometry"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/RootBulwark"]
+position = Vector2(735, 492)
+shape = SubResource("RectangleShape2D_root")
+
+[node name="Visual" type="ColorRect" parent="Geometry/RootBulwark"]
+offset_left = 675.0
+offset_top = 468.0
+offset_right = 795.0
+offset_bottom = 516.0
+color = Color(0.27451, 0.196078, 0.113725, 1)
+
+[node name="Spawns" type="Node2D" parent="."]
+
+[node name="PlayerSpawn" type="Marker2D" parent="Spawns"]
+unique_name_in_owner = true
+position = Vector2(220, 480)
+
+[node name="EnemySpawns" type="Node2D" parent="Spawns"]
+unique_name_in_owner = true
+
+[node name="EnemySpawnGroundA" type="Marker2D" parent="Spawns/EnemySpawns"]
+position = Vector2(635, 480)
+
+[node name="EnemySpawnGroundB" type="Marker2D" parent="Spawns/EnemySpawns"]
+position = Vector2(1010, 480)
+
+[node name="EnemySpawnBranch" type="Marker2D" parent="Spawns/EnemySpawns"]
+position = Vector2(900, 318)
+
+[node name="CollapseRelocationPoints" type="Node2D" parent="Spawns"]
+unique_name_in_owner = true
+
+[node name="CollapseGroundLeft" type="Marker2D" parent="Spawns/CollapseRelocationPoints"]
+position = Vector2(260, 480)
+
+[node name="CollapseGroundCenter" type="Marker2D" parent="Spawns/CollapseRelocationPoints"]
+position = Vector2(600, 480)
+
+[node name="CollapseGroundRight" type="Marker2D" parent="Spawns/CollapseRelocationPoints"]
+position = Vector2(1030, 480)
+
+[node name="UnfoldData" type="Node2D" parent="."]
+
+[node name="UnfoldFloorCenter" type="Marker2D" parent="UnfoldData"]
+unique_name_in_owner = true
+position = Vector2(640, 360)
+
+[node name="LaneMarkers" type="Node2D" parent="UnfoldData"]
+
+[node name="LaneBack" type="Marker2D" parent="UnfoldData/LaneMarkers"]
+position = Vector2(640, 120)
+
+[node name="LaneMidBack" type="Marker2D" parent="UnfoldData/LaneMarkers"]
+position = Vector2(640, 280)
+
+[node name="LaneMidFront" type="Marker2D" parent="UnfoldData/LaneMarkers"]
+position = Vector2(640, 440)
+
+[node name="LaneFront" type="Marker2D" parent="UnfoldData/LaneMarkers"]
+position = Vector2(640, 600)
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="DummyEnemyA" parent="Enemies" instance=ExtResource("3_dummy_enemy")]
+position = Vector2(635, 480)
+
+[node name="DummyEnemyB" parent="Enemies" instance=ExtResource("3_dummy_enemy")]
+position = Vector2(1010, 480)
+
+[node name="ExitPlaceholders" type="Node2D" parent="."]
+
+[node name="GroundDoorPlaceholder" type="StaticBody2D" parent="ExitPlaceholders"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitPlaceholders/GroundDoorPlaceholder"]
+position = Vector2(1180, 470)
+shape = SubResource("RectangleShape2D_exit")
+disabled = true
+
+[node name="Visual" type="ColorRect" parent="ExitPlaceholders/GroundDoorPlaceholder"]
+offset_left = 1159.0
+offset_top = 424.0
+offset_right = 1201.0
+offset_bottom = 516.0
+color = Color(0.105882, 0.239216, 0.215686, 0.7)
+
+[node name="CanopyDoorPlaceholder" type="StaticBody2D" parent="ExitPlaceholders"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitPlaceholders/CanopyDoorPlaceholder"]
+position = Vector2(1060, 310)
+shape = SubResource("RectangleShape2D_exit")
+disabled = true
+
+[node name="Visual" type="ColorRect" parent="ExitPlaceholders/CanopyDoorPlaceholder"]
+offset_left = 1039.0
+offset_top = 264.0
+offset_right = 1081.0
+offset_bottom = 356.0
+color = Color(0.12549, 0.294118, 0.247059, 0.7)
+
+[node name="NextRoomEntries" type="Node2D" parent="ExitPlaceholders"]
+unique_name_in_owner = true
+
+[node name="NextRoomEntryGround" type="Marker2D" parent="ExitPlaceholders/NextRoomEntries"]
+position = Vector2(1180, 480)
+
+[node name="NextRoomEntryCanopy" type="Marker2D" parent="ExitPlaceholders/NextRoomEntries"]
+position = Vector2(1060, 318)

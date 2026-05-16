@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="RoomLaneProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scripts/rooms/room_lane_profile.gd" id="1_lane_profile"]
+
+[resource]
+script = ExtResource("1_lane_profile")
+lane_offsets = Array[float]([-240.0, -80.0, 80.0, 240.0])
+fallback_vertical_y = 480.0
