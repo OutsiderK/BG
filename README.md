@@ -61,9 +61,12 @@ godot4 --headless --path . --script tools/godot/enemy_ai_smoke.gd
 
 完整 smoke tests：
 
+建议顺序执行，不要并行启动多个 Godot headless 进程；部分测试会改全局时间/Autoload 状态，并行时可能互相干扰。
+
 ```bash
 godot4 --headless --path . --script tools/godot/enemy_ai_smoke.gd
 godot4 --headless --path . --script tools/godot/animated_actor_smoke.gd
+godot4 --headless --path . --script tools/godot/sword_event_smoke.gd
 godot4 --headless --path . --script tools/godot/player_state_smoke.gd
 godot4 --headless --path . --script tools/godot/enemy_attack_smoke.gd
 godot4 --headless --path . --script tools/godot/unfold_mapping_smoke.gd

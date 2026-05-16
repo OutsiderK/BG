@@ -68,6 +68,10 @@ func play_attack(attack_name: StringName) -> void:
 	sprite.play(resolved)
 	_on_frame_changed()
 
+func has_animation(animation_name: StringName) -> bool:
+	_ensure_sprite()
+	return _can_play(_resolve_state(animation_name))
+
 func set_facing(direction: int) -> void:
 	if direction == 0:
 		return

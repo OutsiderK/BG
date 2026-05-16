@@ -15,12 +15,15 @@ signal hit_pause_requested(duration: float)
 @export var hit_pause_seconds := 0.05
 @export_range(0.01, 1.0) var hit_pause_time_scale := 0.08
 @export var hit_feedback_scene: PackedScene
+@export var event_driven_hitbox := false
 
 @onready var hitbox: Area2D = $Hitbox
 @onready var collision_shape: CollisionShape2D = $Hitbox/CollisionShape2D
 
 var attack_owner: Node = null
+var attack_in_progress := false
 var active_remaining := 0.0
+var hitbox_active := false
 var cooldown_remaining := 0.0
 var current_facing := Vector2.RIGHT
 var hit_targets: Array[Node] = []
@@ -42,6 +45,10 @@ func _exit_tree() -> void:
 
 func _physics_process(delta: float) -> void:
 	cooldown_remaining = maxf(0.0, cooldown_remaining - delta)
+	if event_driven_hitbox:
+		if hitbox_active:
+			_sample_overlaps()
+		return
 	if active_remaining <= 0.0:
 		return
 	active_remaining = maxf(0.0, active_remaining - delta)
@@ -50,7 +57,7 @@ func _physics_process(delta: float) -> void:
 		_finish_attack()
 
 func try_attack(facing: Vector2 = Vector2.RIGHT, source: Node = null) -> bool:
-	if cooldown_remaining > 0.0 or active_remaining > 0.0:
+	if cooldown_remaining > 0.0 or attack_in_progress or active_remaining > 0.0:
 		return false
 	attack_owner = source if source != null else get_parent()
 	current_facing = facing.normalized()
@@ -58,27 +65,58 @@ func try_attack(facing: Vector2 = Vector2.RIGHT, source: Node = null) -> bool:
 		current_facing = Vector2.RIGHT
 	rotation = current_facing.angle()
 	hit_targets.clear()
-	active_remaining = active_time
+	attack_in_progress = true
 	cooldown_remaining = 1.0 / maxf(attacks_per_second, 0.01)
-	hitbox.monitoring = true
-	collision_shape.disabled = false
+	if event_driven_hitbox:
+		active_remaining = 0.0
+		_set_hitbox_active(false)
+	else:
+		active_remaining = active_time
+		_set_hitbox_active(true)
 	attack_started.emit()
-	call_deferred("_sample_overlaps")
+	if not event_driven_hitbox:
+		call_deferred("_sample_overlaps")
 	return true
 
 func is_attacking() -> bool:
-	return active_remaining > 0.0
+	return attack_in_progress or active_remaining > 0.0
 
 func get_cooldown_remaining() -> float:
 	return cooldown_remaining
 
+func set_event_driven_hitbox(enabled: bool) -> void:
+	event_driven_hitbox = enabled
+	if enabled and not hitbox_active:
+		active_remaining = 0.0
+		_set_hitbox_active(false)
+
+func begin_active_window(_payload: Dictionary = {}) -> void:
+	if not attack_in_progress:
+		return
+	_set_hitbox_active(true)
+	call_deferred("_sample_overlaps")
+
+func end_active_window(_payload: Dictionary = {}) -> void:
+	_set_hitbox_active(false)
+
 func _finish_attack() -> void:
-	hitbox.monitoring = false
-	collision_shape.disabled = true
+	attack_in_progress = false
+	active_remaining = 0.0
+	_set_hitbox_active(false)
 	attack_finished.emit()
 
+func finish_attack(_animation_name: StringName = &"") -> void:
+	if not attack_in_progress and active_remaining <= 0.0 and not hitbox_active:
+		return
+	_finish_attack()
+
+func _set_hitbox_active(enabled: bool) -> void:
+	hitbox_active = enabled
+	hitbox.monitoring = enabled
+	collision_shape.disabled = not enabled
+
 func _sample_overlaps() -> void:
-	if active_remaining <= 0.0:
+	if not hitbox_active:
 		return
 	for body in hitbox.get_overlapping_bodies():
 		_try_hit_body(body)
@@ -87,7 +125,7 @@ func _on_body_entered(body: Node) -> void:
 	_try_hit_body(body)
 
 func _try_hit_body(body: Node) -> void:
-	if active_remaining <= 0.0:
+	if not hitbox_active:
 		return
 	if body == null or body == attack_owner or hit_targets.has(body):
 		return

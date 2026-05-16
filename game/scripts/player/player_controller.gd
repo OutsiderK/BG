@@ -45,6 +45,7 @@ func _ready() -> void:
 		_base_visual_color = player_visual.modulate
 	UnfoldManager.unfold_started.connect(_on_unfold_started)
 	UnfoldManager.unfold_ended.connect(_on_unfold_ended)
+	_connect_actor_attack_events()
 
 func _physics_process(delta: float) -> void:
 	_tick_timers(delta)
@@ -212,6 +213,8 @@ func _die() -> void:
 	dash_invulnerable_remaining = 0.0
 	hit_invulnerable_remaining = 0.0
 	velocity = Vector2.ZERO
+	if sword_attack != null and sword_attack.has_method("finish_attack"):
+		sword_attack.call("finish_attack")
 	if UnfoldManager.is_unfolded() or UnfoldManager.is_transition():
 		UnfoldManager.end_unfold("collapse")
 	UnfoldManager.set_gameplay_blocked(true)
@@ -280,3 +283,17 @@ func _update_actor_animation() -> void:
 		_play_actor_state(&"run")
 		return
 	_play_actor_state(&"idle")
+
+func _connect_actor_attack_events() -> void:
+	if animated_actor == null or sword_attack == null:
+		return
+	if not animated_actor.has_method("has_animation") or not animated_actor.call("has_animation", &"sword-attack-1"):
+		return
+	if sword_attack.has_method("set_event_driven_hitbox"):
+		sword_attack.call("set_event_driven_hitbox", true)
+	if animated_actor.has_signal("hit_start") and sword_attack.has_method("begin_active_window"):
+		animated_actor.connect("hit_start", Callable(sword_attack, "begin_active_window"))
+	if animated_actor.has_signal("hit_end") and sword_attack.has_method("end_active_window"):
+		animated_actor.connect("hit_end", Callable(sword_attack, "end_active_window"))
+	if animated_actor.has_signal("anim_finished") and sword_attack.has_method("finish_attack"):
+		animated_actor.connect("anim_finished", Callable(sword_attack, "finish_attack"))
