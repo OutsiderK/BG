@@ -17,6 +17,7 @@ signal died
 @export var hurt_flash_interval := 0.06
 @export var hurt_flash_color := Color(1.0, 0.35, 0.35, 1.0)
 @export var death_tint := Color(0.28, 0.28, 0.32, 1.0)
+@export var sword_arc_fx_scene: PackedScene = preload("res://game/scenes/fx/SwordArcFx.tscn")
 
 var hp := 10
 var facing := Vector2.RIGHT
@@ -297,3 +298,24 @@ func _connect_actor_attack_events() -> void:
 		animated_actor.connect("hit_end", Callable(sword_attack, "end_active_window"))
 	if animated_actor.has_signal("anim_finished") and sword_attack.has_method("finish_attack"):
 		animated_actor.connect("anim_finished", Callable(sword_attack, "finish_attack"))
+	if animated_actor.has_signal("spawn_fx"):
+		animated_actor.connect("spawn_fx", Callable(self, "_on_actor_spawn_fx"))
+
+func _on_actor_spawn_fx(fx_name: StringName, world_position: Vector2) -> void:
+	if fx_name != &"sword_arc" or sword_arc_fx_scene == null:
+		return
+	var tree := get_tree()
+	if tree == null:
+		return
+	var parent_node: Node = tree.current_scene
+	if parent_node == null:
+		parent_node = get_parent()
+	if parent_node == null:
+		return
+	var fx := sword_arc_fx_scene.instantiate()
+	parent_node.add_child(fx)
+	if fx is Node2D:
+		(fx as Node2D).global_position = world_position
+	if fx.has_method("setup"):
+		var direction := int(signf(facing.x)) if absf(facing.x) > 0.001 else 1
+		fx.call("setup", direction, world_position)
