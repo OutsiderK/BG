@@ -330,6 +330,7 @@ python3 tools/art/godot_import.py \
 - `game/art/sprites/<subject>/spritesheet.png`
 - `game/art/sprites/<subject>/anim.tres`（SpriteFrames 资源，自动产 `idle`、`run-right`、`run-left`、... 每个动画名）
 - `game/art/sprites/<subject>/import.json`（manifest 副本，给 godot_import.py 增量更新用）
+- 如果 base 已被接受，也可提交 `game/art/source/<subject>/base_<version>.png` 和对应 prompt，作为后续 row 生成的身份参考。`docs/art/runs/` 仍是中间产物目录，不入库。
 
 ### Step 12: 报告
 

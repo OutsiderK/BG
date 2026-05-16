@@ -156,6 +156,10 @@ func is_in_recovery_window() -> bool: ...
 ```text
 game/art/
   README.md
+  source/
+    player_saint/
+      base_v0_3.png
+      base_v0_3_prompt.md
   sprites/
     player_saint/
       spritesheet.png
