@@ -1,0 +1,8 @@
+{
+  "row": "sword-attack-2",
+  "frames": 6,
+  "visual_qa": "pass",
+  "hit_start_frame": 2,
+  "hit_end_frame": 4,
+  "notes": "plain blade only; no arc baked into sprite; no forbidden symbols"
+}
