@@ -12,6 +12,11 @@ signal died
 @export var dash_duration := 0.12
 @export var dash_cooldown := 0.8
 @export var max_dash_charges := 2
+@export var hurt_knockback_speed := 180.0
+@export var hurt_knockback_vertical := -80.0
+@export var hurt_flash_interval := 0.06
+@export var hurt_flash_color := Color(1.0, 0.35, 0.35, 1.0)
+@export var death_tint := Color(0.28, 0.28, 0.32, 1.0)
 
 var hp := 10
 var facing := Vector2.RIGHT
@@ -23,6 +28,10 @@ var dash_charges := 2
 var dash_direction := Vector2.RIGHT
 var dead := false
 @onready var sword_attack: Node = get_node_or_null("SwordAttack")
+@onready var player_visual: ColorRect = get_node_or_null("ColorRect") as ColorRect
+
+var _base_visual_color := Color(0.85, 0.92, 1.0, 1.0)
+var _blocked_unfold_on_death := false
 
 func _ready() -> void:
 	add_to_group("player")
@@ -30,11 +39,18 @@ func _ready() -> void:
 	hp = max_hp
 	dash_charges = max_dash_charges
 	RunState.set_health(hp, max_hp)
+	if player_visual != null:
+		_base_visual_color = player_visual.color
 	UnfoldManager.unfold_started.connect(_on_unfold_started)
 	UnfoldManager.unfold_ended.connect(_on_unfold_ended)
 
 func _physics_process(delta: float) -> void:
 	_tick_timers(delta)
+	_update_damage_visual()
+	if dead:
+		_process_dead()
+		move_and_slide()
+		return
 	if Input.is_action_just_pressed("unfold"):
 		if UnfoldManager.is_unfolded():
 			UnfoldManager.end_unfold("early")
@@ -51,6 +67,11 @@ func _physics_process(delta: float) -> void:
 	_process_dash()
 	move_and_slide()
 
+func _exit_tree() -> void:
+	if _blocked_unfold_on_death:
+		UnfoldManager.set_gameplay_blocked(false)
+		_blocked_unfold_on_death = false
+
 func _process_vertical(delta: float) -> void:
 	motion_mode = MOTION_MODE_GROUNDED
 	var direction := Input.get_axis("move_left", "move_right")
@@ -61,6 +82,12 @@ func _process_vertical(delta: float) -> void:
 		velocity.y += gravity * delta
 	if Input.is_action_just_pressed("move_up") and is_on_floor():
 		velocity.y = jump_velocity
+
+func _process_dead() -> void:
+	motion_mode = MOTION_MODE_GROUNDED
+	dash_remaining = 0.0
+	dash_invulnerable_remaining = 0.0
+	velocity = Vector2.ZERO
 
 func _process_unfolded(_delta: float) -> void:
 	motion_mode = MOTION_MODE_FLOATING
@@ -84,7 +111,7 @@ func _tick_timers(delta: float) -> void:
 			dash_charges = max_dash_charges
 
 func _try_start_dash() -> void:
-	if dash_remaining > 0.0 or dash_charges <= 0:
+	if dead or dash_remaining > 0.0 or dash_charges <= 0:
 		return
 	dash_direction = _get_dash_direction()
 	dash_remaining = dash_duration
@@ -94,6 +121,8 @@ func _try_start_dash() -> void:
 		dash_cooldown_remaining = dash_cooldown
 
 func _try_attack() -> void:
+	if dead:
+		return
 	if sword_attack == null or not sword_attack.has_method("try_attack"):
 		return
 	sword_attack.call("try_attack", facing, self)
@@ -115,6 +144,9 @@ func is_invulnerable() -> bool:
 	return hit_invulnerable_remaining > 0.0 or dash_invulnerable_remaining > 0.0
 
 func _on_unfold_started() -> void:
+	if dead:
+		UnfoldManager.end_unfold("collapse")
+		return
 	motion_mode = MOTION_MODE_FLOATING
 	velocity = Vector2.ZERO
 
@@ -122,19 +154,76 @@ func _on_unfold_ended(_reason: String) -> void:
 	motion_mode = MOTION_MODE_GROUNDED
 	velocity = Vector2.ZERO
 
-func apply_damage(amount: int) -> void:
+func apply_damage(amount: int, source: Node = null) -> bool:
 	if dead or amount <= 0 or is_invulnerable():
-		return
+		return false
 	hp = maxi(0, hp - amount)
 	RunState.set_health(hp, max_hp)
 	hit_invulnerable_remaining = Balance.PLAYER_HIT_INVULN
 	RunState.add_heat(Balance.HEAT_DAMAGED)
+	_apply_damage_interrupt(source)
+	_update_damage_visual()
 	damaged.emit(amount)
-	if UnfoldManager.is_unfolded():
-		UnfoldManager.end_unfold("collapse")
 	if hp <= 0:
-		dead = true
-		died.emit()
+		_die()
+	elif UnfoldManager.is_unfolded() or UnfoldManager.is_transition():
+		UnfoldManager.end_unfold("collapse")
+	return true
 
-func take_damage(amount: int) -> void:
-	apply_damage(amount)
+func take_damage(amount: int) -> bool:
+	return apply_damage(amount)
+
+func is_dead() -> bool:
+	return dead
+
+func _apply_damage_interrupt(source: Node = null) -> void:
+	dash_remaining = 0.0
+	var knockback_direction := _get_damage_knockback_direction(source)
+	if UnfoldManager.is_unfolded():
+		velocity = knockback_direction * hurt_knockback_speed
+		return
+	var horizontal := knockback_direction.x
+	if is_zero_approx(horizontal):
+		horizontal = -signf(facing.x) if not is_zero_approx(facing.x) else -1.0
+	velocity.x = signf(horizontal) * hurt_knockback_speed
+	velocity.y = minf(velocity.y, hurt_knockback_vertical)
+
+func _get_damage_knockback_direction(source: Node = null) -> Vector2:
+	var source_2d := source as Node2D
+	if source_2d != null:
+		var offset := global_position - source_2d.global_position
+		if offset.length() > 0.001:
+			return offset.normalized()
+	if facing.length() > 0.001:
+		return -facing.normalized()
+	return Vector2.LEFT
+
+func _die() -> void:
+	if dead:
+		return
+	dead = true
+	dash_remaining = 0.0
+	dash_invulnerable_remaining = 0.0
+	hit_invulnerable_remaining = 0.0
+	velocity = Vector2.ZERO
+	if UnfoldManager.is_unfolded() or UnfoldManager.is_transition():
+		UnfoldManager.end_unfold("collapse")
+	UnfoldManager.set_gameplay_blocked(true)
+	_blocked_unfold_on_death = true
+	_update_damage_visual()
+	died.emit()
+
+func _update_damage_visual() -> void:
+	if player_visual == null:
+		return
+	if dead:
+		player_visual.color = death_tint
+		return
+	if hit_invulnerable_remaining > 0.0:
+		var flash_on := int(floor(hit_invulnerable_remaining / hurt_flash_interval)) % 2 == 0
+		if flash_on:
+			player_visual.color = hurt_flash_color
+		else:
+			player_visual.color = Color(_base_visual_color.r, _base_visual_color.g, _base_visual_color.b, 0.45)
+		return
+	player_visual.color = _base_visual_color
