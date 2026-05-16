@@ -1,0 +1,31 @@
+[gd_scene load_steps=2 format=3 uid="uid://bg_hud"]
+
+[ext_resource type="Script" path="res://game/scripts/ui/hud.gd" id="1_hud_script"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud_script")
+
+[node name="Panel" type="Panel" parent="."]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 300.0
+offset_bottom = 118.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+offset_left = 12.0
+offset_top = 10.0
+offset_right = 272.0
+offset_bottom = 90.0
+
+[node name="HeatLabel" type="Label" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+text = "圣痕 0 / 100"
+
+[node name="RiskLabel" type="Label" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+text = "彻底死亡 12.0%"
+
+[node name="CorruptionLabel" type="Label" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+text = "侵蚀 0"
+
