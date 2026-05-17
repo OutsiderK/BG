@@ -1,6 +1,115 @@
-[gd_scene load_steps=2 format=3 uid="uid://bg_hud"]
+[gd_scene load_steps=13 format=3 uid="uid://bg_hud"]
 
 [ext_resource type="Script" path="res://game/scripts/ui/hud.gd" id="1_hud_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.025, 0.047, 0.058, 0.72)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.56, 0.93, 1, 0.82)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel_soft"]
+bg_color = Color(0.06, 0.105, 0.12, 0.66)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.88, 1, 0.32)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_icon_frame"]
+bg_color = Color(0.035, 0.062, 0.075, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.94, 0.74, 0.31, 0.9)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bg"]
+bg_color = Color(0.04, 0.055, 0.064, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.52, 0.9, 1, 0.28)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill"]
+bg_color = Color(0.78, 0.96, 1, 0.94)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_heat_bg"]
+bg_color = Color(0.045, 0.05, 0.065, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.95, 0.75, 0.31, 0.36)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_heat_fill"]
+bg_color = Color(0.96, 0.76, 0.31, 0.96)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cd_bg"]
+bg_color = Color(0.035, 0.048, 0.056, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.63, 0.94, 1, 0.26)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cd_fill"]
+bg_color = Color(0.58, 0.95, 1, 0.9)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_death_panel"]
+bg_color = Color(0.055, 0.025, 0.044, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.95, 0.22, 0.48, 0.84)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="LabelSettings" id="LabelSettings_unfold_ready"]
+font_size = 15
+font_color = Color(1, 0.86, 0.38, 1)
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud_script")
@@ -8,39 +117,105 @@ script = ExtResource("1_hud_script")
 [node name="Panel" type="Panel" parent="."]
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 408.0
+offset_right = 432.0
 offset_bottom = 286.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="FrameLines" type="Control" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopLine" type="ColorRect" parent="Panel/FrameLines"]
+offset_left = 14.0
+offset_top = 7.0
+offset_right = 210.0
+offset_bottom = 9.0
+color = Color(0.55, 0.94, 1, 0.58)
+
+[node name="LeftLine" type="ColorRect" parent="Panel/FrameLines"]
+offset_left = 7.0
+offset_top = 14.0
+offset_right = 9.0
+offset_bottom = 184.0
+color = Color(0.55, 0.94, 1, 0.46)
+
+[node name="AnchorDot" type="ColorRect" parent="Panel/FrameLines"]
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 14.0
+offset_bottom = 14.0
+color = Color(0.96, 0.74, 0.28, 0.95)
+
+[node name="RiskTick" type="ColorRect" parent="Panel/FrameLines"]
+offset_left = 402.0
+offset_top = 246.0
+offset_right = 410.0
+offset_bottom = 254.0
+color = Color(0.9, 0.18, 0.45, 0.74)
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
-offset_left = 12.0
-offset_top = 10.0
-offset_right = 380.0
-offset_bottom = 258.0
-theme_override_constants/separation = 6
+offset_left = 16.0
+offset_top = 14.0
+offset_right = 400.0
+offset_bottom = 256.0
+theme_override_constants/separation = 8
 
-[node name="HealthLabel" type="Label" parent="Panel/VBoxContainer"]
+[node name="HealthBlock" type="VBoxContainer" parent="Panel/VBoxContainer"]
+theme_override_constants/separation = 3
+
+[node name="HealthHeader" type="HBoxContainer" parent="Panel/VBoxContainer/HealthBlock"]
+theme_override_constants/separation = 8
+
+[node name="HealthGlyph" type="Label" parent="Panel/VBoxContainer/HealthBlock/HealthHeader"]
+theme_override_colors/font_color = Color(0.75, 0.96, 1, 1)
+text = "HP"
+
+[node name="HealthLabel" type="Label" parent="Panel/VBoxContainer/HealthBlock/HealthHeader"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.92, 0.99, 1, 1)
 text = "血量 10 / 10"
 
-[node name="HealthBar" type="ProgressBar" parent="Panel/VBoxContainer"]
+[node name="HealthBar" type="ProgressBar" parent="Panel/VBoxContainer/HealthBlock"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(340, 16)
+custom_minimum_size = Vector2(368, 14)
 max_value = 10.0
 value = 10.0
 show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill")
 
-[node name="HeatLabel" type="Label" parent="Panel/VBoxContainer"]
+[node name="HeatBlock" type="VBoxContainer" parent="Panel/VBoxContainer"]
+theme_override_constants/separation = 3
+
+[node name="HeatHeader" type="HBoxContainer" parent="Panel/VBoxContainer/HeatBlock"]
+theme_override_constants/separation = 8
+
+[node name="HeatGlyph" type="Label" parent="Panel/VBoxContainer/HeatBlock/HeatHeader"]
+theme_override_colors/font_color = Color(0.96, 0.74, 0.28, 1)
+text = "ANCHOR"
+
+[node name="HeatLabel" type="Label" parent="Panel/VBoxContainer/HeatBlock/HeatHeader"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.96, 0.93, 0.74, 1)
 text = "圣痕 0 / 100"
 
-[node name="HeatBar" type="ProgressBar" parent="Panel/VBoxContainer"]
+[node name="HeatBar" type="ProgressBar" parent="Panel/VBoxContainer/HeatBlock"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(340, 16)
+custom_minimum_size = Vector2(368, 16)
 value = 0.0
 show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_heat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_heat_fill")
 
-[node name="HeatHintLabel" type="Label" parent="Panel/VBoxContainer"]
+[node name="HeatHintLabel" type="Label" parent="Panel/VBoxContainer/HeatBlock"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.73, 0.95, 1, 1)
+label_settings = SubResource("LabelSettings_unfold_ready")
 text = "圣痕积累中"
 
 [node name="UnfoldStatusRow" type="HBoxContainer" parent="Panel/VBoxContainer"]
@@ -48,53 +223,119 @@ theme_override_constants/separation = 14
 
 [node name="UnfoldModeLabel" type="Label" parent="Panel/VBoxContainer/UnfoldStatusRow"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.78, 0.96, 1, 1)
 text = "模式 纵平面"
 
 [node name="UnfoldDetailLabel" type="Label" parent="Panel/VBoxContainer/UnfoldStatusRow"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.78, 0.96, 1, 1)
 text = "距展开 100"
+
+[node name="WeaponPanel" type="Panel" parent="Panel/VBoxContainer"]
+custom_minimum_size = Vector2(368, 58)
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel_soft")
+
+[node name="WeaponRow" type="HBoxContainer" parent="Panel/VBoxContainer/WeaponPanel"]
+offset_left = 8.0
+offset_top = 6.0
+offset_right = 358.0
+offset_bottom = 52.0
+theme_override_constants/separation = 10
+
+[node name="WeaponIconFrame" type="Panel" parent="Panel/VBoxContainer/WeaponPanel/WeaponRow"]
+custom_minimum_size = Vector2(46, 46)
+theme_override_styles/panel = SubResource("StyleBoxFlat_icon_frame")
+
+[node name="WeaponIcon" type="TextureRect" parent="Panel/VBoxContainer/WeaponPanel/WeaponRow/WeaponIconFrame"]
+unique_name_in_owner = true
+offset_left = 3.0
+offset_top = 3.0
+offset_right = 43.0
+offset_bottom = 43.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="WeaponInfo" type="VBoxContainer" parent="Panel/VBoxContainer/WeaponPanel/WeaponRow"]
+custom_minimum_size = Vector2(210, 44)
+theme_override_constants/separation = 3
+
+[node name="WeaponLabel" type="Label" parent="Panel/VBoxContainer/WeaponPanel/WeaponRow/WeaponInfo"]
+unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.94, 0.99, 1, 1)
+text = "当前武器 剑"
+
+[node name="WeaponCooldownBar" type="ProgressBar" parent="Panel/VBoxContainer/WeaponPanel/WeaponRow/WeaponInfo"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(210, 10)
+max_value = 1.0
+value = 1.0
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_cd_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_cd_fill")
+
+[node name="WeaponCooldownLabel" type="Label" parent="Panel/VBoxContainer/WeaponPanel/WeaponRow/WeaponInfo"]
+unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.65, 0.9, 0.96, 1)
+text = "剑刃就绪"
+
+[node name="WeaponReadyPip" type="ColorRect" parent="Panel/VBoxContainer/WeaponPanel/WeaponRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(8, 44)
+color = Color(0.96, 0.74, 0.28, 0.95)
 
 [node name="ResourceRow" type="HBoxContainer" parent="Panel/VBoxContainer"]
 theme_override_constants/separation = 18
 
 [node name="GreyCoinLabel" type="Label" parent="Panel/VBoxContainer/ResourceRow"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.78, 0.96, 1, 1)
 text = "灰币 0"
-
-[node name="WeaponLabel" type="Label" parent="Panel/VBoxContainer/ResourceRow"]
-unique_name_in_owner = true
-text = "武器 sword_placeholder"
 
 [node name="DashLabel" type="Label" parent="Panel/VBoxContainer/ResourceRow"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.78, 0.96, 1, 1)
 text = "冲刺 2 次 / 0.8s"
 
-[node name="RiskRow" type="HBoxContainer" parent="Panel/VBoxContainer"]
+[node name="RiskPanel" type="Panel" parent="Panel/VBoxContainer"]
+custom_minimum_size = Vector2(368, 48)
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel_soft")
+
+[node name="RiskStack" type="VBoxContainer" parent="Panel/VBoxContainer/RiskPanel"]
+offset_left = 8.0
+offset_top = 5.0
+offset_right = 358.0
+offset_bottom = 43.0
+theme_override_constants/separation = 2
+
+[node name="RiskRow" type="HBoxContainer" parent="Panel/VBoxContainer/RiskPanel/RiskStack"]
 theme_override_constants/separation = 10
 
-[node name="RiskLabel" type="Label" parent="Panel/VBoxContainer/RiskRow"]
+[node name="RiskLabel" type="Label" parent="Panel/VBoxContainer/RiskPanel/RiskStack/RiskRow"]
 unique_name_in_owner = true
-text = "彻底死亡 12.0%"
+theme_override_colors/font_color = Color(0.94, 0.99, 1, 1)
+text = "锚率 88.0% / 彻死 12.0%"
 
-[node name="RiskHintLabel" type="Label" parent="Panel/VBoxContainer/RiskRow"]
+[node name="RiskHintLabel" type="Label" parent="Panel/VBoxContainer/RiskPanel/RiskStack/RiskRow"]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 text = "+0.0%"
 
-[node name="CorruptionRow" type="HBoxContainer" parent="Panel/VBoxContainer"]
+[node name="CorruptionRow" type="HBoxContainer" parent="Panel/VBoxContainer/RiskPanel/RiskStack"]
 theme_override_constants/separation = 10
 
-[node name="CorruptionLabel" type="Label" parent="Panel/VBoxContainer/CorruptionRow"]
+[node name="CorruptionLabel" type="Label" parent="Panel/VBoxContainer/RiskPanel/RiskStack/CorruptionRow"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.92, 0.92, 0.86, 1)
 text = "侵蚀 安全 0.0"
 
-[node name="CorruptionHintLabel" type="Label" parent="Panel/VBoxContainer/CorruptionRow"]
+[node name="CorruptionHintLabel" type="Label" parent="Panel/VBoxContainer/RiskPanel/RiskStack/CorruptionRow"]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 text = "+0.0 侵蚀"
 
 [node name="SaveLabel" type="Label" parent="Panel/VBoxContainer"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.58, 0.88, 0.95, 0.88)
 text = "存档 待机"
 
 [node name="DeathPanel" type="Panel" parent="."]
@@ -104,6 +345,7 @@ offset_left = 384.0
 offset_top = 184.0
 offset_right = 896.0
 offset_bottom = 400.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_death_panel")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="DeathPanel"]
 offset_left = 18.0
@@ -114,12 +356,15 @@ theme_override_constants/separation = 12
 
 [node name="DeathTitleLabel" type="Label" parent="DeathPanel/VBoxContainer"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(1, 0.82, 0.9, 1)
 text = "普通重塑"
 
 [node name="DeathBodyLabel" type="Label" parent="DeathPanel/VBoxContainer"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.94, 0.99, 1, 1)
 text = "本次判定概率 12.0%，结果：普通重塑"
 
 [node name="DeathDetailLabel" type="Label" parent="DeathPanel/VBoxContainer"]
 unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.84, 0.95, 1, 1)
 text = "保留：局外圣痕点\n失去：本局灰币"

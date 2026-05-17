@@ -6,6 +6,16 @@ const HEAT_READY_COLOR := Color(1.0, 0.82, 0.25)
 const HEAT_COUNTDOWN_COLOR := Color(0.45, 0.9, 1.0)
 const HEAT_LOCKED_COLOR := Color(0.85, 0.28, 0.22)
 const HEAT_IDLE_COLOR := Color.WHITE
+const HUD_TEXT_COLOR := Color(0.92, 0.99, 1.0)
+const WEAPON_READY_COLOR := Color(0.96, 0.74, 0.28)
+const WEAPON_COOLDOWN_COLOR := Color(0.58, 0.95, 1.0)
+const WEAPON_RISK_COLOR := Color(0.9, 0.18, 0.45)
+const SWORD_CONFIG_PATH := "res://game/data/weapons/sword_baseline.cfg"
+const SWORD_ICON_PATH := "res://game/art/sprites/weapons/sword_icon.png"
+const WEAPON_DISPLAY_NAMES := {
+	"sword": "剑",
+	"sword_placeholder": "剑",
+}
 const CORRUPTION_COLORS := {
 	"white": Color(0.92, 0.92, 0.86),
 	"yellow": Color(1.0, 0.82, 0.25),
@@ -25,6 +35,10 @@ const CORRUPTION_COLORS := {
 @onready var corruption_label: Label = %CorruptionLabel
 @onready var corruption_hint_label: Label = %CorruptionHintLabel
 @onready var weapon_label: Label = %WeaponLabel
+@onready var weapon_icon: TextureRect = %WeaponIcon
+@onready var weapon_cooldown_bar: ProgressBar = %WeaponCooldownBar
+@onready var weapon_cooldown_label: Label = %WeaponCooldownLabel
+@onready var weapon_ready_pip: ColorRect = %WeaponReadyPip
 @onready var dash_label: Label = %DashLabel
 @onready var save_label: Label = %SaveLabel
 @onready var death_panel: Panel = %DeathPanel
@@ -38,8 +52,17 @@ var _last_transition_kind := ""
 var _last_unfold_end_reason := ""
 var _risk_tween: Tween
 var _corruption_tween: Tween
+var _heat_ready_tween: Tween
+var _weapon_tween: Tween
+var _weapon_node: Node
+var _weapon_cooldown_duration := 0.5
+var _weapon_cooldown_remaining := 0.0
+var _weapon_damage := 5
+var _weapon_reach := 38.0
 
 func _ready() -> void:
+	_load_weapon_config()
+	_load_weapon_icon()
 	RunState.health_changed.connect(_on_health_changed)
 	RunState.heat_changed.connect(_on_heat_changed)
 	RunState.grey_coins_changed.connect(_on_grey_coins_changed)
@@ -59,9 +82,11 @@ func _ready() -> void:
 	_on_corruption_changed(RunState.corruption, RunState.get_corruption_tier())
 	_update_unfold_status()
 	_update_equipment_placeholders()
+	_update_weapon_cooldown(0.0)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_update_unfold_status()
+	_update_weapon_cooldown(delta)
 
 func _on_health_changed(current: int, maximum: int) -> void:
 	health_label.text = "血量 %d / %d" % [current, maximum]
@@ -115,7 +140,9 @@ func _on_checkpoint_saved(snapshot: Dictionary) -> void:
 	save_label.text = "存档 房间 %d 已记录" % int(snapshot.get("room_index", 1))
 
 func _update_equipment_placeholders() -> void:
-	weapon_label.text = "武器 %s" % RunState.current_weapon_id
+	var weapon_id := RunState.current_weapon_id
+	var display_name: String = WEAPON_DISPLAY_NAMES.get(weapon_id, weapon_id)
+	weapon_label.text = "当前武器 %s  伤害 %d / 距离 %.0f" % [display_name, _weapon_damage, _weapon_reach]
 	dash_label.text = "冲刺 %d 次 / %.1fs" % [RunState.dash_charges, RunState.dash_cooldown]
 	save_label.text = "存档 待机"
 
@@ -159,8 +186,9 @@ func _update_unfold_status() -> void:
 	unfold_mode_label.text = "模式 纵平面"
 	if heat_ready:
 		unfold_detail_label.text = "圣痕就绪"
-		heat_hint_label.text = "圣痕满载 - 按 1 展开"
+		heat_hint_label.text = "圣痕满载 - 按 1 展开  [1] 展开"
 		_set_heat_tint(HEAT_READY_COLOR)
+		_play_heat_ready_feedback()
 	else:
 		var needed := maxf(0.0, Balance.HEAT_TRIGGER_THRESHOLD - RunState.heat)
 		unfold_detail_label.text = "距展开 %.0f" % needed
@@ -172,6 +200,108 @@ func _set_heat_tint(color: Color) -> void:
 	heat_bar.modulate = color
 	heat_hint_label.modulate = color
 	unfold_detail_label.modulate = color
+
+func _load_weapon_config() -> void:
+	var config := ConfigFile.new()
+	var error := config.load(SWORD_CONFIG_PATH)
+	if error != OK:
+		push_warning("HUD could not read sword config: %s" % SWORD_CONFIG_PATH)
+		return
+	var attacks_per_second := float(config.get_value("weapon", "attacks_per_second", 2.0))
+	_weapon_cooldown_duration = 1.0 / maxf(attacks_per_second, 0.01)
+	_weapon_damage = int(config.get_value("weapon", "damage", _weapon_damage))
+	_weapon_reach = float(config.get_value("weapon", "reach", _weapon_reach))
+
+func _load_weapon_icon() -> void:
+	if weapon_icon.texture != null:
+		return
+	var image := Image.load_from_file(SWORD_ICON_PATH)
+	if image == null or image.is_empty():
+		return
+	weapon_icon.texture = ImageTexture.create_from_image(image)
+
+func _update_weapon_cooldown(delta: float) -> void:
+	_resolve_weapon_node()
+	var cooldown_remaining := _read_weapon_cooldown_remaining()
+	if _weapon_node == null:
+		if Input.is_action_just_pressed("attack") and _weapon_cooldown_remaining <= 0.0:
+			trigger_weapon_cooldown_feedback()
+		_weapon_cooldown_remaining = maxf(0.0, _weapon_cooldown_remaining - delta)
+		cooldown_remaining = _weapon_cooldown_remaining
+	var cooldown_ratio := clampf(cooldown_remaining / maxf(_weapon_cooldown_duration, 0.001), 0.0, 1.0)
+	var ready_ratio := 1.0 - cooldown_ratio
+	weapon_cooldown_bar.value = ready_ratio
+	if cooldown_remaining > 0.01:
+		weapon_cooldown_label.text = "冷却 %.1fs" % cooldown_remaining
+		weapon_cooldown_label.modulate = WEAPON_COOLDOWN_COLOR
+		weapon_ready_pip.color = WEAPON_COOLDOWN_COLOR.darkened(0.24)
+		weapon_icon.modulate = Color(0.72, 0.94, 1.0, 0.78)
+	else:
+		weapon_cooldown_label.text = "剑刃就绪"
+		weapon_cooldown_label.modulate = WEAPON_READY_COLOR
+		weapon_ready_pip.color = WEAPON_READY_COLOR
+		weapon_icon.modulate = Color.WHITE
+
+func trigger_weapon_cooldown_feedback() -> void:
+	_weapon_cooldown_remaining = _weapon_cooldown_duration
+	_play_weapon_pulse()
+
+func _resolve_weapon_node() -> void:
+	if is_instance_valid(_weapon_node):
+		return
+	_weapon_node = null
+	var tree := get_tree()
+	if tree == null:
+		return
+	for player in tree.get_nodes_in_group("player"):
+		var sword := player.get_node_or_null("SwordAttack")
+		if sword != null:
+			_bind_weapon_node(sword)
+			return
+	var current_scene := tree.current_scene
+	if current_scene == null:
+		return
+	var player_node := current_scene.find_child("Player", true, false)
+	if player_node == null:
+		return
+	var fallback_sword := player_node.get_node_or_null("SwordAttack")
+	if fallback_sword != null:
+		_bind_weapon_node(fallback_sword)
+
+func _bind_weapon_node(sword: Node) -> void:
+	_weapon_node = sword
+	if sword.has_signal("attack_started"):
+		var started := Callable(self, "_on_weapon_attack_started")
+		if not sword.is_connected("attack_started", started):
+			sword.connect("attack_started", started)
+
+func _read_weapon_cooldown_remaining() -> float:
+	if _weapon_node == null or not is_instance_valid(_weapon_node):
+		_weapon_node = null
+		return 0.0
+	if not _weapon_node.has_method("get_cooldown_remaining"):
+		return 0.0
+	return float(_weapon_node.call("get_cooldown_remaining"))
+
+func _on_weapon_attack_started() -> void:
+	_play_weapon_pulse()
+
+func _play_heat_ready_feedback() -> void:
+	if is_instance_valid(_heat_ready_tween) and _heat_ready_tween.is_running():
+		return
+	heat_hint_label.pivot_offset = heat_hint_label.size * 0.5
+	_heat_ready_tween = create_tween()
+	_heat_ready_tween.tween_property(heat_hint_label, "scale", Vector2.ONE * 1.08, 0.22)
+	_heat_ready_tween.tween_property(heat_hint_label, "scale", Vector2.ONE, 0.28)
+
+func _play_weapon_pulse() -> void:
+	weapon_icon.pivot_offset = weapon_icon.size * 0.5
+	weapon_ready_pip.color = WEAPON_RISK_COLOR
+	if is_instance_valid(_weapon_tween):
+		_weapon_tween.kill()
+	_weapon_tween = create_tween()
+	_weapon_tween.tween_property(weapon_icon, "scale", Vector2.ONE * 1.12, 0.08)
+	_weapon_tween.tween_property(weapon_icon, "scale", Vector2.ONE, 0.18)
 
 func _play_risk_feedback(delta: float) -> void:
 	var color := RISK_UP_COLOR if delta > 0.0 else RISK_DOWN_COLOR
