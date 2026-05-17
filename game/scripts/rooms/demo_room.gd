@@ -15,6 +15,7 @@ const SNAP_HINT_SIZE := 42.0
 const HINT_THICKNESS := 4.0
 const SNAP_HINT_DURATION := 0.7
 const LANE_TICK_HEIGHT := 18.0
+const EXTRACT_INTERACT_DISTANCE := 96.0
 
 @export var lane_profile: Resource
 
@@ -27,15 +28,30 @@ const LANE_TICK_HEIGHT := 18.0
 @onready var lane_markers: Node2D = $UnfoldData/LaneMarkers
 @onready var landing_hints: Node2D = %LandingHints
 @onready var snap_hints: Node2D = %SnapHints
+@onready var enemies_root: Node2D = $Enemies
+@onready var ground_extract_prompt: Label = %ExtractPrompt
+@onready var ground_extract_entry: Marker2D = $ExitPlaceholders/NextRoomEntries/NextRoomEntryGround
 
 var _landing_hint_nodes := {}
+var _remaining_enemies := 0
+var _room_extracted := false
 
 func _ready() -> void:
 	_setup_lane_preview_art()
+	_setup_room_flow()
 	_connect_unfold_signals()
 	UnfoldManager.set_room_adapter(self)
 	_set_lane_preview_strength(false)
 	_clear_landing_hints()
+
+func _process(_delta: float) -> void:
+	if _room_extracted or not RunState.current_room_cleared:
+		return
+	var player := _get_player()
+	var near_extract := player != null and player.global_position.distance_to(ground_extract_entry.global_position) <= EXTRACT_INTERACT_DISTANCE
+	_update_extract_prompt(near_extract)
+	if near_extract and Input.is_action_just_pressed("interact"):
+		try_extract_for_player(player)
 
 func get_lane_profile() -> Resource:
 	return lane_profile
@@ -60,6 +76,20 @@ func get_collapse_relocation_positions() -> Array[Vector2]:
 
 func get_next_room_entry_positions() -> Array[Vector2]:
 	return _collect_marker_positions(next_room_entries)
+
+func try_extract_for_player(player: Node2D = null) -> bool:
+	if _room_extracted or not RunState.current_room_cleared:
+		return false
+	var active_player := player if player != null else _get_player()
+	if active_player == null:
+		return false
+	if active_player.global_position.distance_to(ground_extract_entry.global_position) > EXTRACT_INTERACT_DISTANCE:
+		return false
+	_room_extracted = true
+	_update_extract_prompt(false)
+	RunState.resolve_extraction("ground_rift")
+	UnfoldManager.set_gameplay_blocked(true)
+	return true
 
 func map_player_to_unfolded(player: Node, vertical_position: Vector2) -> Vector2:
 	var target := Vector2(_clamp_room_x(vertical_position.x), unfold_floor_center.global_position.y)
@@ -115,6 +145,59 @@ func _collect_marker_positions(parent: Node) -> Array[Vector2]:
 		if child is Marker2D:
 			positions.append(child.global_position)
 	return positions
+
+func _setup_room_flow() -> void:
+	RunState.set_room_state(RunState.DEFAULT_AREA_ID, 1, false, [])
+	_remaining_enemies = 0
+	for child in enemies_root.get_children():
+		if child == null:
+			continue
+		_remaining_enemies += 1
+		if child.has_signal("died"):
+			var died_callable := Callable(self, "_on_enemy_died")
+			if not child.is_connected("died", died_callable):
+				child.connect("died", died_callable)
+	_update_extract_prompt(false)
+
+func _on_enemy_died(enemy: Node) -> void:
+	_remaining_enemies = maxi(0, _remaining_enemies - 1)
+	RunState.record_enemy_kill()
+	if _remaining_enemies <= 0:
+		_mark_room_cleared()
+
+func _mark_room_cleared() -> void:
+	if RunState.current_room_cleared:
+		return
+	var doors: Array[Dictionary] = [{
+		"id": "ground_rift",
+		"label": "树皮裂隙",
+		"position": ground_extract_entry.global_position,
+	}]
+	RunState.mark_room_cleared(doors)
+	_update_extract_prompt(false)
+
+func _get_player() -> Node2D:
+	var players := get_tree().get_nodes_in_group("player")
+	if not players.is_empty():
+		return players[0] as Node2D
+	var current_scene := get_tree().current_scene
+	if current_scene != null:
+		return current_scene.find_child("Player", true, false) as Node2D
+	return null
+
+func _update_extract_prompt(player_near := false) -> void:
+	if ground_extract_prompt == null:
+		return
+	if _room_extracted:
+		ground_extract_prompt.visible = false
+		return
+	ground_extract_prompt.visible = RunState.current_room_cleared
+	if not RunState.current_room_cleared:
+		ground_extract_prompt.text = "清场后开启撤离"
+	elif player_near:
+		ground_extract_prompt.text = "按 E 撤离"
+	else:
+		ground_extract_prompt.text = "撤离点已开启"
 
 func _connect_unfold_signals() -> void:
 	if not UnfoldManager.unfold_transition_started.is_connected(_on_unfold_transition_started):

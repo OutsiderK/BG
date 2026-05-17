@@ -8,6 +8,8 @@ signal corruption_changed(current: float, tier: String)
 signal player_died(permadeath_roll: bool)
 signal death_resolved(result: Dictionary)
 signal checkpoint_saved(snapshot: Dictionary)
+signal room_state_changed(snapshot: Dictionary)
+signal run_extracted(result: Dictionary)
 
 const DEFAULT_AREA_ID := "giantwood_thin_forest"
 const DEFAULT_WEAPON_ID := "sword_placeholder"
@@ -26,12 +28,14 @@ var dash_cooldown := 0.8
 var current_area_id := DEFAULT_AREA_ID
 var current_room_index := 1
 var current_room_cleared := false
+var current_room_kills := 0
 var player_level := 1
 var items: Array[String] = []
 var attribute_upgrades: Array[String] = []
 var temporary_stigma_points := 0
 var door_options: Array[Dictionary] = []
 var last_death_result: Dictionary = {}
+var last_extraction_result: Dictionary = {}
 
 func _ready() -> void:
 	reset_run()
@@ -50,12 +54,14 @@ func reset_run() -> void:
 	current_area_id = DEFAULT_AREA_ID
 	current_room_index = 1
 	current_room_cleared = false
+	current_room_kills = 0
 	player_level = 1
 	items.clear()
 	attribute_upgrades.clear()
 	temporary_stigma_points = 0
 	door_options.clear()
 	last_death_result.clear()
+	last_extraction_result.clear()
 	health_changed.emit(hp, hp_max)
 	heat_changed.emit(heat, heat_max)
 	grey_coins_changed.emit(grey_coins)
@@ -104,6 +110,50 @@ func set_room_state(area_id: String, room_index: int, room_cleared: bool, doors:
 	current_room_index = maxi(room_index, 1)
 	current_room_cleared = room_cleared
 	door_options = doors.duplicate(true)
+	room_state_changed.emit(build_room_state_snapshot())
+
+func record_enemy_kill(reward_grey_coins := 5, reward_stigma_points := 1) -> void:
+	current_room_kills += 1
+	if reward_grey_coins > 0:
+		add_grey_coins(reward_grey_coins)
+	if reward_stigma_points > 0:
+		temporary_stigma_points += reward_stigma_points
+	room_state_changed.emit(build_room_state_snapshot())
+
+func mark_room_cleared(doors: Array[Dictionary] = []) -> void:
+	current_room_cleared = true
+	door_options = doors.duplicate(true)
+	room_state_changed.emit(build_room_state_snapshot())
+
+func build_room_state_snapshot() -> Dictionary:
+	return {
+		"area_id": current_area_id,
+		"room_index": current_room_index,
+		"room_cleared": current_room_cleared,
+		"kills": current_room_kills,
+		"grey_coins": grey_coins,
+		"temporary_stigma_points": temporary_stigma_points,
+		"door_options": door_options.duplicate(true),
+	}
+
+func resolve_extraction(exit_id := "ground_rift") -> Dictionary:
+	current_room_cleared = true
+	last_extraction_result = {
+		"result_label": "撤离成功",
+		"area_id": current_area_id,
+		"room_index": current_room_index,
+		"exit_id": exit_id,
+		"kills": current_room_kills,
+		"grey_coins": grey_coins,
+		"temporary_stigma_points": temporary_stigma_points,
+		"heat": heat,
+		"risk_probability": get_permadeath_probability(),
+		"corruption": corruption,
+		"corruption_tier": get_corruption_tier(),
+	}
+	save_run_checkpoint({"last_extraction": last_extraction_result.duplicate(true)})
+	run_extracted.emit(last_extraction_result)
+	return last_extraction_result
 
 func get_permadeath_probability() -> float:
 	return clampf(Balance.PERMADEATH_BASE + run_risk_delta, 0.0, 1.0)
@@ -137,6 +187,7 @@ func build_checkpoint_snapshot() -> Dictionary:
 		"area_id": current_area_id,
 		"room_index": current_room_index,
 		"room_cleared": current_room_cleared,
+		"room_kills": current_room_kills,
 		"player_hp": hp,
 		"player_max_hp": hp_max,
 		"heat": heat,

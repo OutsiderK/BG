@@ -45,6 +45,11 @@ const CORRUPTION_COLORS := {
 @onready var death_title_label: Label = %DeathTitleLabel
 @onready var death_body_label: Label = %DeathBodyLabel
 @onready var death_detail_label: Label = %DeathDetailLabel
+@onready var settlement_panel: Panel = %SettlementPanel
+@onready var settlement_title_label: Label = %SettlementTitleLabel
+@onready var settlement_body_label: Label = %SettlementBodyLabel
+@onready var settlement_detail_label: Label = %SettlementDetailLabel
+@onready var settlement_hint_label: Label = %SettlementHintLabel
 
 var _last_risk := -1.0
 var _last_corruption := -1.0
@@ -70,11 +75,14 @@ func _ready() -> void:
 	RunState.corruption_changed.connect(_on_corruption_changed)
 	RunState.death_resolved.connect(_on_death_resolved)
 	RunState.checkpoint_saved.connect(_on_checkpoint_saved)
+	RunState.room_state_changed.connect(_on_room_state_changed)
+	RunState.run_extracted.connect(_on_run_extracted)
 	UnfoldManager.unfold_transition_started.connect(_on_unfold_transition_started)
 	UnfoldManager.unfold_mode_changed.connect(_on_unfold_mode_changed)
 	UnfoldManager.unfold_ended.connect(_on_unfold_ended)
 	UnfoldManager.cooldown_started.connect(_on_cooldown_started)
 	death_panel.visible = false
+	settlement_panel.visible = false
 	_on_health_changed(RunState.hp, RunState.hp_max)
 	_on_heat_changed(RunState.heat, RunState.heat_max)
 	_on_grey_coins_changed(RunState.grey_coins)
@@ -138,6 +146,28 @@ func _on_death_resolved(result: Dictionary) -> void:
 
 func _on_checkpoint_saved(snapshot: Dictionary) -> void:
 	save_label.text = "存档 房间 %d 已记录" % int(snapshot.get("room_index", 1))
+
+func _on_room_state_changed(snapshot: Dictionary) -> void:
+	if bool(snapshot.get("room_cleared", false)):
+		save_label.text = "房间已清理 - 前往撤离点"
+	else:
+		save_label.text = "房间 %d 锁定中" % int(snapshot.get("room_index", 1))
+
+func _on_run_extracted(result: Dictionary) -> void:
+	settlement_panel.visible = true
+	settlement_title_label.text = str(result.get("result_label", "撤离成功"))
+	settlement_body_label.text = "%s 第 %d 房间清理完成" % [
+		_format_area_name(str(result.get("area_id", RunState.DEFAULT_AREA_ID))),
+		int(result.get("room_index", 1)),
+	]
+	settlement_detail_label.text = "击杀 %d\n灰币 %d\n圣痕点 %d\n锚率 %.1f%% / 侵蚀 %.1f" % [
+		int(result.get("kills", 0)),
+		int(result.get("grey_coins", 0)),
+		int(result.get("temporary_stigma_points", 0)),
+		(1.0 - float(result.get("risk_probability", 0.0))) * 100.0,
+		float(result.get("corruption", 0.0)),
+	]
+	settlement_hint_label.text = "Demo v0.4 单房间闭环完成"
 
 func _update_equipment_placeholders() -> void:
 	var weapon_id := RunState.current_weapon_id
@@ -338,3 +368,8 @@ func _join_values(values: Variant) -> String:
 	for value in values:
 		parts.append(str(value))
 	return "、".join(parts)
+
+func _format_area_name(area_id: String) -> String:
+	if area_id == RunState.DEFAULT_AREA_ID:
+		return "巨木薄林"
+	return area_id

@@ -129,6 +129,7 @@ color = Color(0.317647, 0.215686, 0.117647, 1)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/ThinTreeTrunk"]
 position = Vector2(320, 458)
 shape = SubResource("RectangleShape2D_trunk")
+disabled = true
 
 [node name="Visual" type="ColorRect" parent="Geometry/ThinTreeTrunk"]
 offset_left = 292.0
@@ -142,6 +143,7 @@ color = Color(0.211765, 0.133333, 0.0784314, 1)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/RootBulwark"]
 position = Vector2(735, 492)
 shape = SubResource("RectangleShape2D_root")
+disabled = true
 
 [node name="Visual" type="ColorRect" parent="Geometry/RootBulwark"]
 offset_left = 675.0
@@ -231,6 +233,16 @@ offset_top = 424.0
 offset_right = 1201.0
 offset_bottom = 516.0
 color = Color(0.0509804, 0.137255, 0.129412, 0.72)
+
+[node name="ExtractPrompt" type="Label" parent="ExitPlaceholders/GroundDoorPlaceholder"]
+unique_name_in_owner = true
+visible = false
+offset_left = 1088.0
+offset_top = 390.0
+offset_right = 1272.0
+offset_bottom = 418.0
+theme_override_colors/font_color = Color(0.96, 0.84, 0.38, 1)
+text = "清场后开启撤离"
 
 [node name="CanopyDoorPlaceholder" type="StaticBody2D" parent="ExitPlaceholders"]
 
