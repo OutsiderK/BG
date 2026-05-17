@@ -1,8 +1,9 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://game/scripts/rooms/demo_room.gd" id="1_room_script"]
 [ext_resource type="Resource" path="res://game/data/rooms/demo_room_lane_profile.tres" id="2_lane_profile"]
 [ext_resource type="PackedScene" path="res://game/scenes/enemies/DummyEnemy.tscn" id="3_dummy_enemy"]
+[ext_resource type="Script" path="res://game/scripts/rooms/thinforest_room_art.gd" id="4_thinforest_art"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(1280, 48)
@@ -31,12 +32,16 @@ lane_profile = ExtResource("2_lane_profile")
 [node name="SkyBand" type="ColorRect" parent="Backdrop"]
 offset_right = 1280.0
 offset_bottom = 720.0
-color = Color(0.105882, 0.145098, 0.12549, 1)
+color = Color(0.054902, 0.0862745, 0.0784314, 1)
 
 [node name="ThinCanopy" type="ColorRect" parent="Backdrop"]
 offset_right = 1280.0
 offset_bottom = 120.0
-color = Color(0.0705882, 0.121569, 0.0901961, 1)
+color = Color(0.0431373, 0.0823529, 0.0627451, 1)
+
+[node name="ThinForestBackdropArt" type="Node2D" parent="Backdrop"]
+script = ExtResource("4_thinforest_art")
+layer = "backdrop"
 
 [node name="LanePreview" type="Node2D" parent="."]
 
@@ -91,7 +96,7 @@ shape = SubResource("RectangleShape2D_ground")
 offset_top = 516.0
 offset_right = 1280.0
 offset_bottom = 720.0
-color = Color(0.180392, 0.215686, 0.137255, 1)
+color = Color(0.117647, 0.12549, 0.0745098, 1)
 
 [node name="LowBranchPlatform" type="StaticBody2D" parent="Geometry"]
 
@@ -104,7 +109,7 @@ offset_left = 350.0
 offset_top = 418.0
 offset_right = 590.0
 offset_bottom = 442.0
-color = Color(0.352941, 0.247059, 0.137255, 1)
+color = Color(0.317647, 0.215686, 0.117647, 1)
 
 [node name="HighBranchPlatform" type="StaticBody2D" parent="Geometry"]
 
@@ -117,7 +122,7 @@ offset_left = 810.0
 offset_top = 338.0
 offset_right = 990.0
 offset_bottom = 362.0
-color = Color(0.352941, 0.247059, 0.137255, 1)
+color = Color(0.317647, 0.215686, 0.117647, 1)
 
 [node name="ThinTreeTrunk" type="StaticBody2D" parent="Geometry"]
 
@@ -130,7 +135,7 @@ offset_left = 292.0
 offset_top = 400.0
 offset_right = 348.0
 offset_bottom = 516.0
-color = Color(0.254902, 0.164706, 0.101961, 1)
+color = Color(0.211765, 0.133333, 0.0784314, 1)
 
 [node name="RootBulwark" type="StaticBody2D" parent="Geometry"]
 
@@ -143,7 +148,15 @@ offset_left = 675.0
 offset_top = 468.0
 offset_right = 795.0
 offset_bottom = 516.0
-color = Color(0.27451, 0.196078, 0.113725, 1)
+color = Color(0.25098, 0.156863, 0.0862745, 1)
+
+[node name="ThinForestMidgroundArt" type="Node2D" parent="."]
+script = ExtResource("4_thinforest_art")
+layer = "midground"
+
+[node name="ThinForestForegroundArt" type="Node2D" parent="."]
+script = ExtResource("4_thinforest_art")
+layer = "foreground"
 
 [node name="Spawns" type="Node2D" parent="."]
 
@@ -217,7 +230,7 @@ offset_left = 1159.0
 offset_top = 424.0
 offset_right = 1201.0
 offset_bottom = 516.0
-color = Color(0.105882, 0.239216, 0.215686, 0.7)
+color = Color(0.0509804, 0.137255, 0.129412, 0.72)
 
 [node name="CanopyDoorPlaceholder" type="StaticBody2D" parent="ExitPlaceholders"]
 
@@ -231,7 +244,7 @@ offset_left = 1039.0
 offset_top = 264.0
 offset_right = 1081.0
 offset_bottom = 356.0
-color = Color(0.12549, 0.294118, 0.247059, 0.7)
+color = Color(0.0509804, 0.137255, 0.129412, 0.72)
 
 [node name="NextRoomEntries" type="Node2D" parent="ExitPlaceholders"]
 unique_name_in_owner = true

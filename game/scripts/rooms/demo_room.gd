@@ -3,15 +3,18 @@ class_name DemoRoom
 
 const LANE_WEAK_ALPHA := 0.16
 const LANE_STRONG_ALPHA := 0.78
-const LANE_BASE_COLOR := Color(0.36, 0.73, 0.55, 1.0)
-const PLAYER_LANDING_COLOR := Color(0.95, 0.86, 0.42, 0.92)
-const ENEMY_LANDING_COLOR := Color(0.95, 0.28, 0.26, 0.9)
-const PLAYER_SNAP_COLOR := Color(0.50, 0.88, 1.0, 0.92)
-const ENEMY_SNAP_COLOR := Color(1.0, 0.64, 0.36, 0.9)
+const LANE_BASE_COLOR := Color(0.52, 0.86, 0.66, 1.0)
+const LANE_TICK_COLOR := Color(0.86, 0.96, 0.72, 1.0)
+const LANE_NOTCH_COLOR := Color(0.24, 0.52, 0.42, 1.0)
+const PLAYER_LANDING_COLOR := Color(0.98, 0.84, 0.36, 0.92)
+const ENEMY_LANDING_COLOR := Color(1.0, 0.36, 0.30, 0.9)
+const PLAYER_SNAP_COLOR := Color(0.48, 0.91, 0.92, 0.92)
+const ENEMY_SNAP_COLOR := Color(1.0, 0.58, 0.34, 0.9)
 const LANDING_HINT_SIZE := 34.0
 const SNAP_HINT_SIZE := 42.0
 const HINT_THICKNESS := 4.0
 const SNAP_HINT_DURATION := 0.7
+const LANE_TICK_HEIGHT := 18.0
 
 @export var lane_profile: Resource
 
@@ -28,6 +31,7 @@ const SNAP_HINT_DURATION := 0.7
 var _landing_hint_nodes := {}
 
 func _ready() -> void:
+	_setup_lane_preview_art()
 	_connect_unfold_signals()
 	UnfoldManager.set_room_adapter(self)
 	_set_lane_preview_strength(false)
@@ -145,6 +149,53 @@ func _set_lane_preview_strength(strong: bool) -> void:
 		var color := LANE_BASE_COLOR
 		color.a = alpha
 		lane_rect.color = color
+		_apply_lane_child_alpha(lane_rect, alpha)
+
+func _setup_lane_preview_art() -> void:
+	for child in lane_preview.get_children():
+		var lane_rect := child as ColorRect
+		if lane_rect == null:
+			continue
+		lane_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if lane_rect.has_node("CoordinateTicks"):
+			continue
+		var width := lane_rect.size.x
+		if width <= 0.0:
+			width = 1120.0
+		_add_lane_bar(lane_rect, "UpperCut", Vector2(width, 1.0), Vector2(0, -5), LANE_NOTCH_COLOR, 0.72)
+		_add_lane_bar(lane_rect, "LowerCut", Vector2(width, 1.0), Vector2(0, 8), LANE_NOTCH_COLOR, 0.62)
+		var ticks := Node2D.new()
+		ticks.name = "CoordinateTicks"
+		lane_rect.add_child(ticks)
+		for x in range(0, int(width) + 1, 140):
+			var height := LANE_TICK_HEIGHT if x % 280 == 0 else LANE_TICK_HEIGHT * 0.62
+			_add_lane_bar(ticks, "Tick%03d" % x, Vector2(2, height), Vector2(x - 1, -height * 0.5 + 2), LANE_TICK_COLOR, 0.86)
+		for x in range(70, int(width), 280):
+			_add_lane_bar(ticks, "Fragment%03d" % x, Vector2(46, 2), Vector2(x, -1), LANE_TICK_COLOR, 0.55)
+
+func _add_lane_bar(parent: Node, bar_name: String, size: Vector2, position: Vector2, color: Color, alpha_scale: float) -> ColorRect:
+	var bar := ColorRect.new()
+	bar.name = bar_name
+	bar.size = size
+	bar.position = position
+	bar.color = color
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.set_meta("base_color", color)
+	bar.set_meta("alpha_scale", alpha_scale)
+	parent.add_child(bar)
+	return bar
+
+func _apply_lane_child_alpha(parent: Node, alpha: float) -> void:
+	for child in parent.get_children():
+		var rect := child as ColorRect
+		if rect != null:
+			var base_color := rect.color
+			var meta_color = rect.get_meta("base_color", null)
+			if meta_color is Color:
+				base_color = meta_color
+			base_color.a = clampf(alpha * float(rect.get_meta("alpha_scale", 1.0)), 0.0, 1.0)
+			rect.color = base_color
+		_apply_lane_child_alpha(child, alpha)
 
 func _update_landing_hint(key: String, global_point: Vector2, is_player_hint: bool) -> void:
 	var color := PLAYER_LANDING_COLOR if is_player_hint else ENEMY_LANDING_COLOR
@@ -181,12 +232,19 @@ func _create_cross_hint(hint_name: String, color: Color, size: float) -> Node2D:
 	var hint := Node2D.new()
 	hint.name = hint_name
 	hint.z_index = 1
-	var horizontal := _create_hint_bar("Horizontal", color, Vector2(size, HINT_THICKNESS), Vector2(-size * 0.5, -HINT_THICKNESS * 0.5))
-	var vertical := _create_hint_bar("Vertical", color, Vector2(HINT_THICKNESS, size), Vector2(-HINT_THICKNESS * 0.5, -size * 0.5))
-	var center := _create_hint_bar("Center", color, Vector2(HINT_THICKNESS * 1.5, HINT_THICKNESS * 1.5), Vector2(-HINT_THICKNESS * 0.75, -HINT_THICKNESS * 0.75))
-	hint.add_child(horizontal)
-	hint.add_child(vertical)
-	hint.add_child(center)
+	var half := size * 0.5
+	var corner := size * 0.28
+	var center := _create_hint_bar("Center", color, Vector2(HINT_THICKNESS * 1.35, HINT_THICKNESS * 1.35), Vector2(-HINT_THICKNESS * 0.675, -HINT_THICKNESS * 0.675))
+	var upper_left_h := _create_hint_bar("UpperLeftH", color, Vector2(corner, HINT_THICKNESS), Vector2(-half, -half))
+	var upper_left_v := _create_hint_bar("UpperLeftV", color, Vector2(HINT_THICKNESS, corner), Vector2(-half, -half))
+	var upper_right_h := _create_hint_bar("UpperRightH", color, Vector2(corner, HINT_THICKNESS), Vector2(half - corner, -half))
+	var upper_right_v := _create_hint_bar("UpperRightV", color, Vector2(HINT_THICKNESS, corner), Vector2(half - HINT_THICKNESS, -half))
+	var lower_left_h := _create_hint_bar("LowerLeftH", color, Vector2(corner, HINT_THICKNESS), Vector2(-half, half - HINT_THICKNESS))
+	var lower_left_v := _create_hint_bar("LowerLeftV", color, Vector2(HINT_THICKNESS, corner), Vector2(-half, half - corner))
+	var lower_right_h := _create_hint_bar("LowerRightH", color, Vector2(corner, HINT_THICKNESS), Vector2(half - corner, half - HINT_THICKNESS))
+	var lower_right_v := _create_hint_bar("LowerRightV", color, Vector2(HINT_THICKNESS, corner), Vector2(half - HINT_THICKNESS, half - corner))
+	for bar in [upper_left_h, upper_left_v, upper_right_h, upper_right_v, lower_left_h, lower_left_v, lower_right_h, lower_right_v, center]:
+		hint.add_child(bar)
 	return hint
 
 func _create_hint_bar(bar_name: String, color: Color, size: Vector2, position: Vector2) -> ColorRect:
