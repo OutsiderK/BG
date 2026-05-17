@@ -34,7 +34,9 @@ var attack_active_remaining := 0.0
 var attack_interrupt_flash_remaining := 0.0
 var pending_attack_target: Node2D
 var attack_direction := Vector2.RIGHT
+var _last_visual_state: StringName = &""
 @onready var body_visual: CanvasItem = get_node_or_null("ColorRect") as CanvasItem
+@onready var visual_actor: Node = get_node_or_null("EnemyVisualActor")
 @onready var attack_telegraph_visual: CanvasItem = get_node_or_null("AttackTelegraph") as CanvasItem
 @onready var attack_window_visual: CanvasItem = get_node_or_null("AttackWindow") as CanvasItem
 @onready var attack_cooldown_visual: CanvasItem = get_node_or_null("CooldownPip") as CanvasItem
@@ -44,6 +46,7 @@ func _ready() -> void:
 	add_to_group("enemies")
 	UnfoldManager.register_enemy(self)
 	tree_exiting.connect(_on_tree_exiting)
+	_play_visual_state(&"idle")
 	_update_attack_visuals()
 
 func _physics_process(delta: float) -> void:
@@ -66,6 +69,9 @@ func apply_damage(amount: int, _source: Node = null) -> bool:
 	hp = maxi(hp - amount, 0)
 	RunState.add_heat(Balance.HEAT_HIT)
 	damaged.emit(self, amount, hp, max_hp)
+	if visual_actor != null and visual_actor.has_method("flash_hurt"):
+		visual_actor.call("flash_hurt")
+		_last_visual_state = &"hurt"
 	if attack_windup_remaining > 0.0:
 		_interrupt_attack_windup()
 	if hp <= 0:
@@ -231,6 +237,8 @@ func _update_attack_visuals() -> void:
 		var cooldown_progress := attack_cooldown_remaining / maxf(attack_cooldown, 0.001)
 		_set_visual_scale(attack_cooldown_visual, Vector2(maxf(cooldown_progress, 0.08), 1.0))
 
+	_update_visual_actor(is_winding_up, is_active)
+
 	if body_visual == null:
 		return
 	if attack_interrupt_flash_remaining > 0.0:
@@ -243,6 +251,42 @@ func _update_attack_visuals() -> void:
 		body_visual.modulate = Color(0.7, 0.9, 1.0, 1.0)
 	else:
 		body_visual.modulate = Color.WHITE
+
+func _update_visual_actor(is_winding_up: bool, is_active: bool) -> void:
+	if visual_actor == null:
+		return
+	_update_visual_facing()
+	if is_dead:
+		_play_visual_state(&"death")
+	elif attack_interrupt_flash_remaining > 0.0:
+		_play_visual_state(&"hurt")
+	elif is_active:
+		_play_visual_state(&"attack")
+	elif is_winding_up:
+		_play_visual_state(&"telegraph")
+	elif velocity.length_squared() > 64.0:
+		_play_visual_state(&"move")
+	else:
+		_play_visual_state(&"idle")
+
+func _update_visual_facing() -> void:
+	if visual_actor == null or not visual_actor.has_method("set_facing_direction"):
+		return
+	var facing_direction := attack_direction
+	if attack_windup_remaining <= 0.0 and attack_active_remaining <= 0.0:
+		if absf(velocity.x) > 1.0:
+			facing_direction = Vector2(signf(velocity.x), 0.0)
+		elif target != null and is_instance_valid(target):
+			facing_direction = target.global_position - global_position
+	visual_actor.call("set_facing_direction", facing_direction)
+
+func _play_visual_state(state_name: StringName) -> void:
+	if visual_actor == null or not visual_actor.has_method("play_state"):
+		return
+	if _last_visual_state == state_name:
+		return
+	_last_visual_state = state_name
+	visual_actor.call("play_state", state_name)
 
 func _set_visual_visible(visual: CanvasItem, is_visible: bool) -> void:
 	if visual != null:
@@ -301,4 +345,5 @@ func _die() -> void:
 		_:
 			RunState.add_heat(Balance.HEAT_KILL_NORMAL)
 	died.emit(self)
+	_play_visual_state(&"death")
 	queue_free()
